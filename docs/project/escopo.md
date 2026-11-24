@@ -113,3 +113,25 @@ marcar, renomear e remover itens de checklist; contadores na lista.
 11. **Quando** edito o texto de um item e saio do campo, **então** salva; texto vazio volta ao anterior.
 12. **Quando** removo um item, **então** ele some (exclusão lógica).
 13. Tudo persiste ao recarregar e funciona offline.
+
+## Objetivo 5 — PWA: instalar e abrir sem internet (concluído)
+
+**Por quê:** o plano é um PWA offline-first que "instala no celular e no Windows". Os dados já ficam no aparelho;
+falta o próprio app (HTML, JS, CSS) abrir sem rede e poder ser instalado.
+
+**Dentro:** manifesto com nome, ícones e cores; service worker que guarda o app em cache; aviso de nova versão;
+botão "Instalar" quando o navegador oferece.
+
+**Fora:** notificações push (dependem do servidor), sincronização em segundo plano.
+
+### Critérios de aceite
+1. O app tem manifesto válido: nome "TickTick", abre em tela própria (`standalone`), `start_url` `/`, cor do tema
+   e ícones de 192 e 512 px (inclusive versão `maskable` para Android).
+2. **Dado** que abri o app uma vez com internet, **quando** fico sem internet e abro ou recarrego `/` ou
+   `/financas`, **então** o app abre normalmente, com meus dados.
+3. **Na** primeira visita, **quando** o app termina de ficar disponível offline, **então** aparece um aviso
+   "Pronto para usar sem internet".
+4. **Dado** que publiquei uma nova versão, **quando** abro o app, **então** aparece um aviso com o botão "Atualizar";
+   o app não recarrega sozinho (para não perder o que estou digitando).
+5. **Quando** o navegador permite instalar, **então** aparece um botão "Instalar" no menu; depois de instalado, some.
+6. Nada muda nos dados guardados (IndexedDB) ao instalar ou atualizar.

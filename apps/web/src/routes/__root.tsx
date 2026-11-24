@@ -12,6 +12,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
+import { AvisosPWA, BotaoInstalar } from "@/components/AvisosPWA";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -82,6 +83,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      // PWA (objetivo 5)
+      { name: "theme-color", content: "#18543c" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-title", content: "TickTick" },
     ],
     links: [
       {
@@ -94,6 +99,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@600;700&display=swap",
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon-48.png", type: "image/png", sizes: "48x48" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "apple-touch-icon", href: "/icons/apple-touch-icon.png" },
     ],
   }),
   shellComponent: RootShell,
@@ -130,6 +138,7 @@ function MenuPrincipal() {
         <Link to="/financas" className={link} activeProps={ativo}>
           Finanças
         </Link>
+        <BotaoInstalar />
       </nav>
     </header>
   );
@@ -146,6 +155,7 @@ function RootComponent() {
       <ClientOnly fallback={null}>
         <MenuPrincipal />
         <Outlet />
+        <AvisosPWA />
       </ClientOnly>
       <Toaster richColors position="top-center" />
     </QueryClientProvider>

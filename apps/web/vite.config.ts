@@ -15,6 +15,7 @@ export default defineConfig({
     // "casca" HTML pré-renderizada; rotas e dados (IndexedDB) carregam no cliente.
     spa: { enabled: true },
   },
-  // ADR 0003: saída estática (.output/public), servida pelo Caddy; sem servidor Node/Workers.
+  // ADR 0003: saída estática (dist/client), servida pelo Caddy; sem servidor Node/Workers.
+  // O service worker do PWA é gerado depois do build por scripts/gerar-sw.mjs (ADR 0004).
   nitro: false,
 });

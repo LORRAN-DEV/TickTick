@@ -20,10 +20,12 @@ pnpm test        # todos os pacotes
 pnpm typecheck
 pnpm lint        # apps/web
 pnpm dev         # sobe o app web
-pnpm build       # gera apps/web/dist/client (estático; fallback de rotas para _shell.html)
+pnpm build       # gera apps/web/dist/client (estático; fallback de rotas para _shell.html) + sw.js do PWA
 ```
 
-Node 22.18+ (roda `.ts` direto). Num container sem IPv6, suba com `pnpm --filter @ticktick/web dev --host 127.0.0.1`.
+Node 22.18+ (roda `.ts` direto). Num container sem IPv6, suba com `pnpm --filter @ticktick/web dev --host 127.0.0.1 --strictPort`
+e encerre com `pkill -f "vite.js dev"` (o nome do processo é `vite.js dev`; `pkill -f "vite dev"` não acha nada).
+No `pnpm dev` não há service worker; para testar o PWA, rode `pnpm build` e sirva `apps/web/dist/client/` (ADR 0004).
 
 ## Convenções
 
