@@ -1,0 +1,16 @@
+# Contexto do docker build é a raiz do monorepo; só vai o que as imagens precisam.
+**/node_modules
+**/dist
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/.tanstack
+.git
+.github
+tests
+tools
+docs
+infra/backups
+infra/.env
+*.log

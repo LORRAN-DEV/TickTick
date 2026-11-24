@@ -37,6 +37,35 @@ jobs:
         env:
           TICKTICK_TEST_DATABASE_URL: postgresql+psycopg://ticktick:ticktick@127.0.0.1:5432/ticktick_teste
 
+  docker:
+    name: Docker Compose (sobe tudo e confere)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: infra
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configuração de teste
+        run: |
+          printf 'DOMINIO=localhost\nPOSTGRES_SENHA=senhaDoCi123\nPORTA_HTTP=8080\nPORTA_HTTPS=8443\nPASTA_BACKUP=./backups\n' > .env
+      - name: Build das imagens
+        run: docker compose build
+      - name: Subir
+        run: docker compose up -d --wait --wait-timeout 180
+      - name: Criar usuário
+        run: echo "senha-do-ci-12345" | docker compose run --rm -T api ticktick-api criar-usuario ci@exemplo.com --senha-stdin
+      - name: Verificar
+        run: PORTA_HTTPS=8443 EMAIL=ci@exemplo.com SENHA=senha-do-ci-12345 ./verificar.sh
+      - name: Backup gerado
+        run: ls backups/ticktick-*.dump
+      - name: Logs se falhar
+        if: failure()
+        run: docker compose logs --tail 100
+      - name: Descer
+        if: always()
+        run: docker compose down -v
+
   verificar:
     name: Testes, tipos, lint, build e e2e
     runs-on: ubuntu-latest

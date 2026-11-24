@@ -205,3 +205,27 @@ sincronização automática (ao abrir, ao voltar a conexão, logo depois de cada
 7. **Primeiro login no aparelho:** o que já existia nele (criado antes de entrar) é enviado; os dados de exemplo
    nunca alterados não são enviados e saem deste aparelho.
 8. Se a sessão expira, o app avisa "Entre de novo para sincronizar" e não perde as mudanças da fila.
+
+## Objetivo 9 — Implantação com Docker Compose e backup (concluído)
+
+**Por quê:** para usar o app de verdade em mais de um aparelho, o servidor precisa rodar sempre ligado. O plano:
+"Tudo sobe com um `docker compose up`", com Caddy dando HTTPS e backup diário do Postgres.
+
+**Dentro:** imagens da API e do app web (Caddy servindo o build e repassando `/api`); Postgres com volume;
+serviço de backup diário com `pg_dump`, guardando 14 dias; `.env.example`; guia de hospedagem; job no CI que sobe
+tudo e confere.
+
+**Fora:** escolher onde hospedar (decisão pendente do humano), acesso remoto (Tailscale/Cloudflare Tunnel),
+restaurar backup pela interface.
+
+### Critérios de aceite
+1. Com um `.env` preenchido, `docker compose up -d --build` (em `infra/`) sobe Postgres, API, app e backup, e todos
+   ficam saudáveis.
+2. `https://<domínio>/` abre o app; `/financas` (rota do app) também; `/api/saude` responde pela API.
+3. `docker compose run --rm api ticktick-api criar-usuario <email>` cria o usuário; o login pelo app funciona e o
+   cookie de sessão é `Secure`.
+4. `sw.js`, o manifesto e o HTML vão com `Cache-Control: no-cache`; `assets/` com cache longo.
+5. O serviço de backup gera um arquivo `ticktick-AAAA-MM-DD.dump` ao subir e depois uma vez por dia, apagando os de mais
+   de 14 dias; o guia mostra como restaurar.
+6. Os dados sobrevivem a `docker compose down` + `up` (volume do Postgres).
+7. O CI sobe o compose e verifica os itens 1 a 4 a cada push.

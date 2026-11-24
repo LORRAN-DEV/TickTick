@@ -1,0 +1,82 @@
+# TickTick em produção: `cd infra && cp .env.example .env` (edite) e `docker compose up -d --build`.
+# Guia completo em infra/README.md.
+name: ticktick
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ticktick
+      POSTGRES_PASSWORD: ${POSTGRES_SENHA:?defina POSTGRES_SENHA no infra/.env}
+      POSTGRES_DB: ticktick
+    volumes:
+      - dados-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticktick -d ticktick"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    image: ticktick-api
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      TICKTICK_DATABASE_URL: postgresql+psycopg://ticktick:${POSTGRES_SENHA}@postgres:5432/ticktick
+      TICKTICK_COOKIE_SEGURO: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    image: ticktick-web
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    environment:
+      DOMINIO: ${DOMINIO:-localhost}
+    ports:
+      - "${PORTA_HTTP:-80}:80"
+      - "${PORTA_HTTPS:-443}:443"
+    volumes:
+      - dados-caddy:/data # certificados
+      - config-caddy:/config
+    depends_on:
+      api:
+        condition: service_healthy
+
+  # Backup diário: um .dump por dia em PASTA_BACKUP, guardando 14 dias.
+  # Restaurar: ver infra/README.md.
+  backup:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      PGPASSWORD: ${POSTGRES_SENHA}
+    volumes:
+      - ${PASTA_BACKUP:-./backups}:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint:
+      - sh
+      - -c
+      - |
+        while true; do
+          arquivo="/backups/ticktick-$$(date +%F).dump"
+          if pg_dump -h postgres -U ticktick -d ticktick -Fc -f "$$arquivo.tmp"; then
+            mv "$$arquivo.tmp" "$$arquivo" && echo "backup: $$arquivo"
+          else
+            echo "backup: FALHOU" >&2
+          fi
+          find /backups -name 'ticktick-*.dump' -mtime +14 -delete
+          sleep 86400
+        done
+
+volumes:
+  dados-postgres:
+  dados-caddy:
+  config-caddy:

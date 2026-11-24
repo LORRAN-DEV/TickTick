@@ -93,5 +93,12 @@ def main(argv: list[str] | None = None) -> None:
 
         from .app import criar_app
 
-        # proxy_headers: atrás do Caddy, o IP do cliente (limite de login) vem do X-Forwarded-For.
-        uvicorn.run(criar_app(), host=a.host, port=a.porta, proxy_headers=True)
+        # Atrás do Caddy, o IP do cliente (limite de login) vem do X-Forwarded-For, mas só se o proxy for
+        # confiável: TICKTICK_PROXIES_CONFIAVEIS (no Docker, "*": a API só é alcançável pela rede interna).
+        uvicorn.run(
+            criar_app(),
+            host=a.host,
+            port=a.porta,
+            proxy_headers=True,
+            forwarded_allow_ips=config_padrao().proxies_confiaveis,
+        )

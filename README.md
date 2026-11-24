@@ -66,6 +66,10 @@ claude --agent tech-lead
 
 Depois, dentro do Claude Code: `/kickoff <objetivo>`. Detalhes e monitor de tokens: `tools/time-agentes/README.md`.
 
+## Hospedando
+
+Tudo sobe com `docker compose` (Postgres, API, Caddy com HTTPS e backup diário). Guia em `infra/README.md`.
+
 ## Licença
 
 MIT, ver [LICENSE](LICENSE).

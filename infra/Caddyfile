@@ -1,0 +1,28 @@
+# Caddy: HTTPS automático, app estático e /api repassado para a API (ADR 0003, 0004 e 0006).
+# DOMINIO: um domínio público (certificado da Let's Encrypt) ou "localhost" (certificado da CA local do Caddy).
+{$DOMINIO:localhost} {
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy same-origin
+		X-Frame-Options DENY
+		-Server
+	}
+
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+
+	handle {
+		root * /srv
+		# Arquivos com hash no nome podem ficar em cache para sempre; o resto (HTML, sw.js, manifesto) não.
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		@naoAssets not path /assets/*
+		header @naoAssets Cache-Control "no-cache"
+		# Rotas do app (/, /financas, /conta...) são do cliente: qualquer caminho sem arquivo abre a casca.
+		try_files {path} /_shell.html
+		file_server
+	}
+}

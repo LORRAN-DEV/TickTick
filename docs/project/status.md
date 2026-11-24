@@ -1,6 +1,6 @@
 # Status do projeto
 
-_Atualizado em 24/11/2026, depois do objetivo 8._
+_Atualizado em 24/11/2026, depois do objetivo 9._
 
 ## Pronto
 - **Parser de quick-add** em português: datas, horas, recorrência, `#tag`, `~lista`, `!prioridade`
@@ -31,6 +31,8 @@ _Atualizado em 24/11/2026, depois do objetivo 8._
 - **Objetivo 8: app sincronizando**: página Conta (entrar/sair), fila de saída automática no banco local, sync ao
   abrir, ao voltar a conexão, logo depois de cada mudança e a cada minuto; indicador no menu ("Sincronizado",
   "Offline · N pendentes", "Entre de novo"). Verificado com dois aparelhos e a API de verdade. `docs/qa/objetivo-8.md`.
+- **Objetivo 9: implantação**: `infra/` com Docker Compose (Postgres, API, Caddy com HTTPS servindo o app e
+  repassando `/api`, backup diário de 14 dias), guia `infra/README.md` e `infra/verificar.sh`. `docs/qa/objetivo-9.md`.
 - **Time de agentes** configurado (`CLAUDE.md`, `.claude/agents/`, `.claude/skills/`).
 
 ## Falta
@@ -38,7 +40,6 @@ _Atualizado em 24/11/2026, depois do objetivo 8._
 - Lembretes e notificações.
 - Contas e categorias editáveis (a tela usa listas fixas), transferências na interface, importar/exportar CSV.
 - Aviso instantâneo entre aparelhos (SSE): hoje o outro aparelho vê a mudança em até 60 s.
-- Implantação: `docker compose` com API, Postgres e Caddy (não verificável neste ambiente, sem Docker).
 
 ## Decisões tomadas
 - Back-end em **Python** (FastAPI + PostgreSQL): `docs/adr/0002-stack-do-back-end.md`.
@@ -52,7 +53,7 @@ _Atualizado em 24/11/2026, depois do objetivo 8._
 1. Itens em aberto do plano: onde hospedar (VPS ou máquina em casa), iPhone ou Android, importar de outro app.
 
 ## Próximos objetivos sugeridos (em ordem)
-1. `docker compose` (API + Postgres + Caddy servindo o app e repassando `/api`) e backup diário, para usar de
-   verdade em mais de um aparelho.
+1. **Você** escolher onde hospedar e subir (guia em `infra/README.md`); depois, usar por duas semanas, como o plano
+   pede antes da fase 2.
 2. Lembretes: worker no servidor e Web Push.
 3. Aviso instantâneo entre aparelhos (SSE).

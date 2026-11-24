@@ -15,6 +15,8 @@ class Config(BaseSettings):
     sessao_dias: int = 90
     login_max_falhas: int = 5
     login_janela_segundos: int = 60
+    # IPs de proxies cujo X-Forwarded-For vale (uvicorn forwarded_allow_ips). "*" só atrás de rede fechada.
+    proxies_confiaveis: str = "127.0.0.1"
 
 
 @lru_cache
