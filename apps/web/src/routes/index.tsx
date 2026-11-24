@@ -41,6 +41,7 @@ import {
   CONTAS,
   brl,
   hojeLocal,
+  parseValor,
   porCategoria,
   resumoAno,
   resumoMes,
@@ -49,6 +50,29 @@ import {
   type Mov,
   type Tipo,
 } from "@ticktick/core";
+import {
+  adicionarMeta,
+  adicionarMov,
+  alternarPago,
+  aportarMeta,
+  excluirMeta,
+  excluirMov,
+  limparTudo,
+  type NovaMeta as DadosMeta,
+  type NovaMov as DadosMov,
+} from "@/db/financas";
+import { useFinancas } from "@/db/useFinancas";
+
+/** Grava no banco local; avisa se falhar (ex.: navegador sem IndexedDB ou modo privado restrito). */
+function salvar(p: Promise<unknown>, sucesso?: string) {
+  p.then(
+    () => sucesso && toast.success(sucesso),
+    (e: unknown) => {
+      console.error(e);
+      toast.error("Não foi possível salvar neste navegador");
+    },
+  );
+}
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -69,126 +93,7 @@ export const Route = createFileRoute("/")({
   component: App,
 });
 
-const hoje = new Date();
-const ymNow = hojeLocal(hoje).slice(0, 7);
-const d = (day: number, mo = 0) => {
-  const x = new Date(hoje.getFullYear(), hoje.getMonth() - mo, day);
-  return hojeLocal(x);
-};
-let seq = 0;
-const uid = () => `id${++seq}${Date.now().toString(36)}`;
-
-const EXEMPLO: Mov[] = [
-  ...[0, 1, 2, 3].flatMap((mo): Mov[] => [
-    {
-      id: uid(),
-      data: d(5, mo),
-      tipo: "Entrada" as Tipo,
-      descricao: "Salário",
-      categoria: "Outros",
-      contaId: "Conta Corrente",
-      valor: 5200,
-      status: "pago",
-      criadoEm: "",
-      atualizadoEm: "",
-    },
-    {
-      id: uid(),
-      data: d(8, mo),
-      tipo: "Despesa" as Tipo,
-      descricao: "Aluguel",
-      categoria: "Moradia",
-      contaId: "Conta Corrente",
-      valor: 1500,
-      status: "pago",
-      criadoEm: "",
-      atualizadoEm: "",
-    },
-    {
-      id: uid(),
-      data: d(12, mo),
-      tipo: "Despesa" as Tipo,
-      descricao: "Mercado",
-      categoria: "Alimentação",
-      contaId: "Cartão de Crédito",
-      valor: 700 + mo * 60,
-      status: "pago",
-      criadoEm: "",
-      atualizadoEm: "",
-    },
-    {
-      id: uid(),
-      data: d(15, mo),
-      tipo: "Investimento" as Tipo,
-      descricao: "Aporte mensal",
-      categoria: "Investimentos",
-      contaId: "Investimentos",
-      valor: 600,
-      status: "pago",
-      criadoEm: "",
-      atualizadoEm: "",
-    },
-  ]),
-  {
-    id: uid(),
-    data: d(18),
-    tipo: "Despesa",
-    descricao: "Combustível",
-    categoria: "Transporte",
-    contaId: "Cartão de Crédito",
-    valor: 320,
-    status: "pago" as const,
-    criadoEm: "",
-    atualizadoEm: "",
-  },
-  {
-    id: uid(),
-    data: d(20),
-    tipo: "Despesa",
-    descricao: "Streaming",
-    categoria: "Assinaturas",
-    contaId: "Cartão de Crédito",
-    valor: 55,
-    status: "pendente" as const,
-    criadoEm: "",
-    atualizadoEm: "",
-  },
-  {
-    id: uid(),
-    data: d(22),
-    tipo: "Despesa",
-    descricao: "Cinema",
-    categoria: "Lazer",
-    contaId: "Dinheiro",
-    valor: 90,
-    status: "pago" as const,
-    criadoEm: "",
-    atualizadoEm: "",
-  },
-  {
-    id: uid(),
-    data: d(10),
-    tipo: "Entrada",
-    descricao: "Freela",
-    categoria: "Outros",
-    contaId: "Conta Corrente",
-    valor: 900,
-    status: "pago" as const,
-    criadoEm: "",
-    atualizadoEm: "",
-  },
-];
-const METAS: Meta[] = [
-  {
-    id: uid(),
-    nome: "Reserva de emergência",
-    alvo: 15000,
-    atual: 6200,
-    prazo: `${hoje.getFullYear() + 1}-06-30`,
-  },
-  { id: uid(), nome: "Viagem de férias", alvo: 5000, atual: 5000 },
-];
-
+const ymNow = hojeLocal().slice(0, 7);
 type Aba = "painel" | "movs" | "mensal" | "metas" | "ajuda";
 const ABAS: { id: Aba; label: string; icon: typeof List }[] = [
   { id: "painel", label: "Painel", icon: LayoutDashboard },
@@ -210,8 +115,7 @@ const sel = "h-10 w-full rounded-md border border-input bg-card px-3 text-sm";
 
 function App() {
   const [aba, setAba] = useState<Aba>("painel");
-  const [movs, setMovs] = useState<Mov[]>(EXEMPLO);
-  const [metas, setMetas] = useState<Meta[]>(METAS);
+  const { movs, metas } = useFinancas();
   const [ym, setYm] = useState(ymNow);
   const [novo, setNovo] = useState<Tipo | null>(null);
   const [novaMeta, setNovaMeta] = useState(false);
@@ -417,19 +321,7 @@ function App() {
                         <td className="px-2 font-semibold">{brl(m.valor)}</td>
                         <td className="px-2">
                           <button
-                            onClick={() =>
-                              setMovs((x) =>
-                                x.map((y) =>
-                                  y.id === m.id
-                                    ? {
-                                        ...y,
-                                        status: y.status === "pago" ? "pendente" : "pago",
-                                        atualizadoEm: new Date().toISOString(),
-                                      }
-                                    : y,
-                                ),
-                              )
-                            }
+                            onClick={() => salvar(alternarPago(m.id))}
                             className={`rounded-full px-2 py-0.5 text-xs ${m.status === "pago" ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground"}`}
                           >
                             {m.status === "pago" ? "Sim" : "Não"}
@@ -439,7 +331,7 @@ function App() {
                           <Button
                             size="icon"
                             variant="ghost"
-                            onClick={() => setMovs((x) => x.filter((y) => y.id !== m.id))}
+                            onClick={() => salvar(excluirMov(m.id))}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -524,20 +416,12 @@ function App() {
                           key={v}
                           size="sm"
                           variant="outline"
-                          onClick={() =>
-                            setMetas((x) =>
-                              x.map((y) => (y.id === m.id ? { ...y, atual: y.atual + v } : y)),
-                            )
-                          }
+                          onClick={() => salvar(aportarMeta(m.id, v))}
                         >
                           + {brl(v)}
                         </Button>
                       ))}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setMetas((x) => x.filter((y) => y.id !== m.id))}
-                      >
+                      <Button size="sm" variant="ghost" onClick={() => salvar(excluirMeta(m.id))}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -617,9 +501,7 @@ function App() {
               variant="outline"
               className="mt-3"
               onClick={() => {
-                setMovs([]);
-                setMetas([]);
-                toast.success("Dados de exemplo apagados");
+                salvar(limparTudo(), "Dados apagados");
               }}
             >
               Começar do zero (apagar exemplos)
@@ -632,19 +514,17 @@ function App() {
         tipo={novo}
         onClose={() => setNovo(null)}
         onSave={(m) => {
-          setMovs((x) => [...x, m]);
           setNovo(null);
           setYm(m.data.slice(0, 7));
-          toast.success(`${m.tipo} adicionada`);
+          salvar(adicionarMov(m), `${m.tipo} adicionada`);
         }}
       />
       <NovaMeta
         open={novaMeta}
         onClose={() => setNovaMeta(false)}
         onSave={(m) => {
-          setMetas((x) => [...x, m]);
           setNovaMeta(false);
-          toast.success("Meta criada");
+          salvar(adicionarMeta(m), "Meta criada");
         }}
       />
     </div>
@@ -713,7 +593,7 @@ function NovaMov({
 }: {
   tipo: Tipo | null;
   onClose: () => void;
-  onSave: (m: Mov) => void;
+  onSave: (m: DadosMov) => void;
 }) {
   return (
     <Dialog open={!!tipo} onOpenChange={(o) => !o && onClose()}>
@@ -728,13 +608,12 @@ function NovaMov({
             onSubmit={(e) => {
               e.preventDefault();
               const f = new FormData(e.currentTarget);
-              const valor = Number(String(f.get("valor")).replace(",", "."));
+              const valor = parseValor(String(f.get("valor")));
               if (!valor || valor <= 0) {
                 toast.error("Informe um valor positivo");
                 return;
               }
               onSave({
-                id: uid(),
                 data: String(f.get("data")),
                 tipo: f.get("tipo") as Tipo,
                 descricao: String(f.get("descricao")),
@@ -742,8 +621,6 @@ function NovaMov({
                 contaId: String(f.get("conta")),
                 valor,
                 status: f.get("pago") === "on" ? "pago" : "pendente",
-                criadoEm: new Date().toISOString(),
-                atualizadoEm: new Date().toISOString(),
               });
             }}
           >
@@ -804,7 +681,7 @@ function NovaMeta({
 }: {
   open: boolean;
   onClose: () => void;
-  onSave: (m: Meta) => void;
+  onSave: (m: DadosMeta) => void;
 }) {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -823,7 +700,6 @@ function NovaMeta({
               return;
             }
             onSave({
-              id: uid(),
               nome: String(f.get("nome")),
               alvo,
               atual: Number(f.get("atual")) || 0,

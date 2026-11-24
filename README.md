@@ -1,16 +1,15 @@
 # TickTick
 
 App pessoal de tarefas inspirado no TickTick, com controle financeiro: PWA offline-first com back-end self-hosted.
-O plano completo (escopo, arquitetura, modelo de dados, roadmap) está no documento
-"Estrutura de um app pessoal inspirado no TickTick".
+O plano completo (escopo, arquitetura, modelo de dados, roadmap) está em `docs/project/plano.md`.
 
 ## Estado atual
 
 | Pacote | O que tem | Status |
 | --- | --- | --- |
-| `packages/core` | Parser de quick-add em português (datas, horas, recorrência, `#tag`, `~lista`, `!prioridade`) e cálculos do controle financeiro (resumo do mês, categorias, saldo por conta, vencimentos, metas, CSV) | Pronto, 67 testes |
-| `apps/web` | App web (React + TanStack Start + Tailwind/shadcn). Por enquanto só a tela de controle financeiro: painel com gráficos, movimentações, resumo mensal e metas | Em andamento: dados só em memória (somem ao recarregar), sem tela de tarefas |
-| `apps/api` | API (Hono + PostgreSQL) | A fazer |
+| `packages/core` | Parser de quick-add em português (datas, horas, recorrência, `#tag`, `~lista`, `!prioridade`) e cálculos do controle financeiro (resumo do mês, categorias, saldo por conta, vencimentos, metas, CSV) | Pronto, 70 testes |
+| `apps/web` | App web (React + TanStack Start + Tailwind/shadcn). Por enquanto só a tela de controle financeiro: painel com gráficos, movimentações, resumo mensal e metas | Em andamento: dados guardados no navegador (IndexedDB); falta a tela de tarefas |
+| `apps/api` | API (Python: FastAPI + PostgreSQL) | A fazer |
 
 ## Rodando
 

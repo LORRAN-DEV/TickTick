@@ -26,6 +26,8 @@ export interface Mov {
   obs?: string | undefined;
   criadoEm: string;
   atualizadoEm: string;
+  /** Exclusão lógica: preenchido quando a movimentação foi apagada. */
+  excluidoEm?: string | undefined;
 }
 
 export interface Conta {
@@ -50,6 +52,10 @@ export interface Meta {
   atual: number;
   prazo?: PlainDate | undefined;
   descricao?: string | undefined;
+  criadoEm?: string | undefined;
+  atualizadoEm?: string | undefined;
+  /** Exclusão lógica: preenchido quando a meta foi apagada. */
+  excluidoEm?: string | undefined;
 }
 
 export const CATEGORIAS_INICIAIS: Array<[string, CatTipo]> = [

@@ -7,10 +7,10 @@ App pessoal de tarefas (inspirado no TickTick) com controle financeiro. Monorepo
 | Pasta | O que é | Testes |
 |---|---|---|
 | `packages/core/` | `@ticktick/core`: TypeScript puro, sem dependências. Parser de quick-add (`src/parser/`) e cálculos financeiros (`src/finance/`) | `node:test` (`*.test.ts` ao lado do código) |
-| `apps/web/` | `@ticktick/web`: React 19 + TanStack Start + Tailwind 4 + shadcn/ui. Importa a lógica de `@ticktick/core` | Vitest + Testing Library (`src/test/`) |
-| `apps/api/` | Ainda não existe. Stack em aberto (Hono/Node ou Python), ver `docs/adr/` | — |
+| `apps/web/` | `@ticktick/web`: React 19 + TanStack Start + Tailwind 4 + shadcn/ui. Importa a lógica de `@ticktick/core`. Banco local em `src/db/` (Dexie/IndexedDB) | Vitest + Testing Library + fake-indexeddb (`src/test/`) |
+| `apps/api/` | Ainda não existe. Será Python (FastAPI + PostgreSQL), ver `docs/adr/0002-stack-do-back-end.md` | pytest |
 | `docs/adr/` | Decisões registradas | — |
-| `docs/project/` | Escopo, riscos e status | — |
+| `docs/project/` | Plano completo (`plano.md`), escopo, status | — |
 
 ## Comandos (na raiz)
 
@@ -28,6 +28,8 @@ Node 22.18+ (roda `.ts` direto). Num container sem IPv6, suba com `pnpm --filter
 
 - Datas são `PlainDate` (`"YYYY-MM-DD"`, calendário local). Nunca use `toISOString()` para obter "hoje": use `hojeLocal()` de `@ticktick/core`.
 - Regra de negócio mora em `packages/core`, com teste. O app web só apresenta.
+- A tela nunca grava direto no IndexedDB: usa as funções de `apps/web/src/db/`. Todo registro tem id `uuidv7()`
+  gerado no aparelho, `criadoEm`/`atualizadoEm` e exclusão lógica (`excluidoEm`), para o sync futuro.
 - Textos de interface, nomes de domínio, commits e docs em português.
 - `apps/web/src/components/ui/` é shadcn gerado: evite editar à mão; `src/routeTree.gen.ts` é gerado pelo router.
 - Nada de `git push` sem o humano pedir.
