@@ -1,6 +1,6 @@
 # TickTick
 
-App pessoal de tarefas inspirado no TickTick: PWA offline-first com back-end self-hosted.
+App pessoal de tarefas inspirado no TickTick, com controle financeiro: PWA offline-first com back-end self-hosted.
 O plano completo (escopo, arquitetura, modelo de dados, roadmap) está no documento
 "Estrutura de um app pessoal inspirado no TickTick".
 
@@ -8,8 +8,8 @@ O plano completo (escopo, arquitetura, modelo de dados, roadmap) está no docume
 
 | Pacote | O que tem | Status |
 | --- | --- | --- |
-| `packages/core` | Parser de quick-add em português (datas, horas, recorrência, `#tag`, `~lista`, `!prioridade`) | Pronto, 53 testes |
-| `apps/web` | PWA (React + Vite) | A fazer |
+| `packages/core` | Parser de quick-add em português (datas, horas, recorrência, `#tag`, `~lista`, `!prioridade`) e cálculos do controle financeiro (resumo do mês, categorias, saldo por conta, vencimentos, metas, CSV) | Pronto, 67 testes |
+| `apps/web` | App web (React + TanStack Start + Tailwind/shadcn). Por enquanto só a tela de controle financeiro: painel com gráficos, movimentações, resumo mensal e metas | Em andamento: dados só em memória (somem ao recarregar), sem tela de tarefas |
 | `apps/api` | API (Hono + PostgreSQL) | A fazer |
 
 ## Rodando
@@ -21,6 +21,8 @@ corepack enable        # ativa o pnpm que vem com o Node
 pnpm install
 pnpm test              # roda os testes de todos os pacotes
 pnpm typecheck         # checagem de tipos com o tsc
+pnpm dev               # sobe o app web (o endereço aparece no terminal)
+pnpm build             # build de produção do app web
 ```
 
 ## Quick-add: o que o parser entende
@@ -40,6 +42,14 @@ Regras de decisão, para discutir e ajustar:
 - Só a hora, sem data: hoje, ou amanhã se o horário já passou.
 - "estudar 2h" é duração, não horário: sem "às", horas abaixo de 6 só valem com minutos ou período.
 - "de manhã", "à tarde" e "à noite" viram 09:00, 15:00 e 20:00 (configurável).
+
+## Controle financeiro: regras
+
+- Só movimentações **pagas** entram nos totais e saldos; pendentes aparecem à parte e canceladas são ignoradas.
+- Saldo do mês = entradas − despesas − investimentos.
+- Transferência não é entrada nem despesa: só move dinheiro entre contas.
+- Meta só fica "Concluída" quando o acumulado chega ao alvo; passou do prazo sem chegar, fica "Atrasada".
+- Valores e datas aceitam o formato brasileiro (`R$ 1.234,56`, `05/03/2026`); CSV usa `;`.
 
 ## Licença
 
