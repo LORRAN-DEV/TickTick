@@ -1,0 +1,20 @@
+{
+  "_fonte": "https://platform.claude.com/docs/en/about-claude/pricing (consultado em 2026-11-16). US$ por milhão de tokens. Edite se seus preços mudarem.",
+  "_ordem": "A primeira chave contida no ID do modelo vence; deixe as mais específicas primeiro.",
+  "modelos": {
+    "fable-5-2":  {"entrada": 8,   "cache_5m": 10,    "cache_1h": 16, "cache_leitura": 0.20, "saida": 40},
+    "mythos-5-2": {"entrada": 8,   "cache_5m": 10,    "cache_1h": 16, "cache_leitura": 0.20, "saida": 40},
+    "fable-5-1":  {"entrada": 10,  "cache_5m": 12.5,  "cache_1h": 20, "cache_leitura": 0.25, "saida": 50},
+    "fable-5":    {"entrada": 10,  "cache_5m": 12.5,  "cache_1h": 20, "cache_leitura": 1,    "saida": 50},
+    "opus-5-5":   {"entrada": 4,   "cache_5m": 5,     "cache_1h": 8,  "cache_leitura": 0.20, "saida": 20},
+    "opus-5":     {"entrada": 5,   "cache_5m": 6.25,  "cache_1h": 10, "cache_leitura": 0.50, "saida": 25},
+    "opus-4-1":   {"entrada": 15,  "cache_5m": 18.75, "cache_1h": 30, "cache_leitura": 1.50, "saida": 75},
+    "opus-4-":    {"entrada": 5,   "cache_5m": 6.25,  "cache_1h": 10, "cache_leitura": 0.50, "saida": 25},
+    "sonnet-5-5": {"entrada": 2,   "cache_5m": 2.5,   "cache_1h": 4,  "cache_leitura": 0.10, "saida": 10},
+    "sonnet-5":   {"entrada": 2,   "cache_5m": 2.5,   "cache_1h": 4,  "cache_leitura": 0.20, "saida": 10},
+    "sonnet-4":   {"entrada": 3,   "cache_5m": 3.75,  "cache_1h": 6,  "cache_leitura": 0.30, "saida": 15},
+    "haiku-5-5":  {"entrada": 0.10, "cache_5m": 0.125, "cache_1h": 0.20, "cache_leitura": 0.01, "saida": 0.50,
+                   "acima_100k": {"entrada": 0.50, "cache_5m": 0.625, "cache_1h": 1, "cache_leitura": 0.05, "saida": 2.50}},
+    "haiku-4-5":  {"entrada": 1,   "cache_5m": 1.25,  "cache_1h": 2,  "cache_leitura": 0.10, "saida": 5}
+  }
+}

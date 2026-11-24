@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--__REFRESH__-->
+<title>Consumo de tokens do time</title>
+<style>
+.viz-root {
+  color-scheme: light;
+  --surface-0: #f4f3f0; --surface-1: #fcfcfb; --border: #e3e2dd; --grid: #ecebe7;
+  --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #7a7974;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+  --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948;
+  --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+  --accent: #2a78d6;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) .viz-root {
+    color-scheme: dark;
+    --surface-0: #111110; --surface-1: #1a1a19; --border: #2e2e2b; --grid: #262624;
+    --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --s5: #d55181; --s6: #0ca30c; --s7: #9085e9; --s8: #e66767;
+    --accent: #3987e5;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+.viz-root { background: var(--surface-0); color: var(--text-primary); min-height: 100vh;
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: 24px; }
+.wrap { max-width: 1180px; margin: 0 auto; }
+header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+.sub { color: var(--text-secondary); font-size: 13px; }
+.badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px;
+  border: 1px solid var(--border); color: var(--text-secondary); margin-left: 8px; vertical-align: middle; }
+[hidden] { display: none !important; }
+.filtros { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface-1); }
+.seg button { border: 0; background: transparent; color: var(--text-secondary); padding: 6px 12px; font: inherit; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--border); }
+.seg button[aria-pressed="true"] { background: var(--text-primary); color: var(--surface-1); font-weight: 600; }
+select { font: inherit; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); }
+.grid { display: grid; gap: 16px; }
+.kpis { grid-template-columns: repeat(4, 1fr); margin-bottom: 16px; }
+.dois { grid-template-columns: 3fr 2fr; margin-bottom: 16px; }
+@media (max-width: 900px) { .kpis { grid-template-columns: repeat(2, 1fr); } .dois { grid-template-columns: 1fr; } }
+.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+.card h2 { font-size: 15px; margin: 0 0 2px; }
+.card .nota { color: var(--text-muted); font-size: 12px; margin: 0 0 12px; }
+.kpi .rot { color: var(--text-secondary); font-size: 12px; }
+.kpi .val { font-size: 28px; font-weight: 650; letter-spacing: -0.02em; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.kpi .det { color: var(--text-muted); font-size: 12px; }
+.legenda { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 4px 0 10px; font-size: 12px; color: var(--text-secondary); }
+.legenda span { display: inline-flex; align-items: center; gap: 6px; }
+.legenda i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+svg text { fill: var(--text-muted); font-size: 11px; font-family: inherit; }
+svg .rot-barra { fill: var(--text-primary); font-size: 12px; }
+svg .val-barra { fill: var(--text-secondary); font-size: 12px; font-variant-numeric: tabular-nums; }
+.hit { fill: transparent; cursor: default; }
+.hit:hover { fill: var(--text-primary); fill-opacity: 0.04; }
+#tip { position: fixed; pointer-events: none; z-index: 10; background: var(--surface-1); color: var(--text-primary);
+  border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.12);
+  min-width: 190px; display: none; }
+#tip .t { font-weight: 600; margin-bottom: 4px; }
+#tip .l { display: flex; justify-content: space-between; gap: 12px; font-variant-numeric: tabular-nums; }
+#tip .l span:first-child { display: inline-flex; align-items: center; gap: 6px; color: var(--text-secondary); }
+#tip i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+th { text-align: right; font-weight: 600; color: var(--text-secondary); font-size: 12px; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+td { text-align: right; padding: 7px 8px; border-bottom: 1px solid var(--grid); }
+th:first-child, td:first-child { text-align: left; }
+td .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; vertical-align: -1px; }
+.mini { display: inline-block; height: 6px; border-radius: 3px; background: var(--text-muted); opacity: .5; vertical-align: middle; margin-left: 6px; }
+.recs { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.recs li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: start; }
+.recs .ic { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; color: #fff; }
+.recs b { font-weight: 600; }
+.recs small { color: var(--text-secondary); display: block; }
+.vazio { color: var(--text-muted); padding: 24px 0; text-align: center; }
+footer { color: var(--text-muted); font-size: 12px; margin-top: 18px; }
+code { font-size: 12px; background: var(--grid); padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="viz-root">
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Consumo de tokens do time <span id="demo" class="badge" hidden>DADOS DE EXEMPLO</span></h1>
+      <div class="sub" id="gerado"></div>
+    </div>
+    <div class="filtros">
+      <div class="seg" id="periodo" role="group" aria-label="Período">
+        <button data-d="1">Hoje</button><button data-d="7">7 dias</button><button data-d="14">14 dias</button><button data-d="30">30 dias</button>
+      </div>
+      <select id="projeto" aria-label="Projeto"></select>
+    </div>
+  </header>
+
+  <section class="grid kpis" id="kpis"></section>
+
+  <section class="grid dois">
+    <div class="card">
+      <h2>Custo por dia, por agente</h2>
+      <p class="nota">Passe o mouse sobre um dia para ver a divisão.</p>
+      <div class="legenda" id="leg1"></div>
+      <div id="g-dias"></div>
+    </div>
+    <div class="card">
+      <h2>Quem mais consome</h2>
+      <p class="nota">Custo estimado no período e participação no total.</p>
+      <div id="g-agentes"></div>
+    </div>
+  </section>
+
+  <section class="grid dois">
+    <div class="card">
+      <h2>Detalhe por agente</h2>
+      <p class="nota">Tokens por tipo. Cache lido é barato; entrada nova e saída são caras.</p>
+      <div id="t-agentes"></div>
+    </div>
+    <div class="card">
+      <h2>O que dá para melhorar</h2>
+      <p class="nota">Sugestões calculadas a partir do período selecionado.</p>
+      <ul class="recs" id="recs"></ul>
+    </div>
+  </section>
+
+  <section class="grid dois">
+    <div class="card">
+      <h2>Sessões mais caras</h2>
+      <p class="nota">Use <code>/clear</code> entre tarefas não relacionadas para não arrastar contexto.</p>
+      <div id="t-sessoes"></div>
+    </div>
+    <div class="card">
+      <h2>Por modelo</h2>
+      <p class="nota">Opus para decisões difíceis; Sonnet/Haiku para rotina.</p>
+      <div id="t-modelos"></div>
+    </div>
+  </section>
+
+  <footer id="rodape"></footer>
+</div>
+<div id="tip"></div>
+</div>
+
+<script>
+const D = /*__DADOS__*/null;
+const COR = {}; D.grupos.forEach((g, i) => COR[g] = `var(--s${i + 1})`);
+const ROT = g => D.rotulos[g] || g;
+const usd = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
+const $ = v => usd.format(v || 0);
+const tk = n => n >= 1e9 ? (n / 1e9).toFixed(1).replace('.', ',') + ' bi' : n >= 1e6 ? (n / 1e6).toFixed(1).replace('.', ',') + ' mi' : n >= 1e3 ? Math.round(n / 1e3) + ' mil' : String(Math.round(n));
+const pct = v => Math.round(v * 100) + '%';
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+// linha: [dia, rotulo, grupo, modelo, sessao, projeto, inp, out, cw, cr, custo, msgs]
+const I = { dia: 0, rot: 1, grp: 2, mod: 3, ses: 4, proj: 5, inp: 6, out: 7, cw: 8, cr: 9, usd: 10, msgs: 11 };
+
+let estado = { dias: Math.min(7, D.dias), projeto: '' };
+try { const s = JSON.parse(localStorage.getItem('painel-tokens') || '{}'); Object.assign(estado, s); } catch (e) {}
+
+function salvar() { try { localStorage.setItem('painel-tokens', JSON.stringify(estado)); } catch (e) {} }
+function diaISO(off) { const d = new Date(D.hoje + 'T12:00:00'); d.setDate(d.getDate() - off); return d.toISOString().slice(0, 10); }
+function filtrar() {
+  const ini = diaISO(estado.dias - 1);
+  return D.linhas.filter(l => l[I.dia] >= ini && (!estado.projeto || l[I.proj] === estado.projeto));
+}
+function somar(linhas, chave) {
+  const m = new Map();
+  for (const l of linhas) {
+    const k = typeof chave === 'function' ? chave(l) : l[chave];
+    const a = m.get(k) || { inp: 0, out: 0, cw: 0, cr: 0, usd: 0, msgs: 0, l };
+    a.inp += l[I.inp]; a.out += l[I.out]; a.cw += l[I.cw]; a.cr += l[I.cr]; a.usd += l[I.usd]; a.msgs += l[I.msgs];
+    m.set(k, a);
+  }
+  return m;
+}
+const tokens = a => a.inp + a.out + a.cw + a.cr;
+
+/* ---------- tooltip ---------- */
+const tip = document.getElementById('tip');
+function mostrarTip(ev, html) { tip.innerHTML = html; tip.style.display = 'block'; moverTip(ev); }
+function moverTip(ev) {
+  const r = tip.getBoundingClientRect(); let x = ev.clientX + 14, y = ev.clientY + 14;
+  if (x + r.width > innerWidth - 8) x = ev.clientX - r.width - 14;
+  if (y + r.height > innerHeight - 8) y = ev.clientY - r.height - 14;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+}
+function esconderTip() { tip.style.display = 'none'; }
+
+/* ---------- formas ---------- */
+function topoArredondado(x, y, w, h, r) {
+  r = Math.min(r, w / 2, h);
+  return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
+}
+function pontaArredondada(x, y, w, h, r) {
+  r = Math.min(r, h / 2, w);
+  return `M${x},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h - r}Q${x + w},${y + h} ${x + w - r},${y + h}H${x}Z`;
+}
+function escalaBonita(max) {
+  if (max <= 0) return { max: 1, passo: 0.25 };
+  const bruto = max / 4, mag = Math.pow(10, Math.floor(Math.log10(bruto)));
+  const passo = [1, 2, 2.5, 5, 10].map(m => m * mag).find(p => p >= bruto);
+  return { max: Math.ceil(max / passo) * passo, passo };
+}
+
+/* ---------- KPIs ---------- */
+function kpis(linhas) {
+  const t = somar(linhas, () => 'x').get('x') || { inp: 0, out: 0, cw: 0, cr: 0, usd: 0, msgs: 0 };
+  const hoje = somar(D.linhas.filter(l => l[I.dia] === D.hoje && (!estado.projeto || l[I.proj] === estado.projeto)), () => 'x').get('x') || { usd: 0, msgs: 0 };
+  const entrada = t.inp + t.cw + t.cr, hit = entrada ? t.cr / entrada : 0;
+  const diasAtivos = new Set(linhas.map(l => l[I.dia])).size || 1;
+  const hitCor = hit >= 0.8 ? 'var(--good)' : hit >= 0.6 ? 'var(--warning)' : 'var(--critical)';
+  const hitTxt = hit >= 0.8 ? 'bom' : hit >= 0.6 ? 'atenção' : 'baixo';
+  document.getElementById('kpis').innerHTML = `
+    <div class="card kpi"><div class="rot">Custo estimado no período</div><div class="val">${$(t.usd)}</div><div class="det">média ${$(t.usd / diasAtivos)} por dia ativo</div></div>
+    <div class="card kpi"><div class="rot">Hoje</div><div class="val">${$(hoje.usd)}</div><div class="det">${hoje.msgs} respostas do modelo</div></div>
+    <div class="card kpi"><div class="rot">Tokens processados</div><div class="val">${tk(tokens(t))}</div><div class="det">${tk(t.out)} de saída · ${t.msgs} respostas</div></div>
+    <div class="card kpi"><div class="rot">Entrada servida pelo cache</div><div class="val">${pct(hit)}</div>
+      <div class="det"><span style="color:${hitCor}">●</span> ${hitTxt} — quanto maior, mais barato</div></div>`;
+}
+
+/* ---------- gráfico por dia ---------- */
+function graficoDias(linhas) {
+  const el = document.getElementById('g-dias');
+  const dias = []; for (let i = estado.dias - 1; i >= 0; i--) dias.push(diaISO(i));
+  const ativos = D.grupos.filter(g => linhas.some(l => l[I.grp] === g));
+  document.getElementById('leg1').innerHTML = ativos.map(g => `<span><i style="background:${COR[g]}"></i>${ROT(g)}</span>`).join('');
+  if (!linhas.length) { el.innerHTML = '<div class="vazio">Sem consumo no período.</div>'; return; }
+  const porDia = {}; for (const d of dias) porDia[d] = {};
+  for (const l of linhas) { const p = porDia[l[I.dia]]; if (p) p[l[I.grp]] = (p[l[I.grp]] || 0) + l[I.usd]; }
+  const tot = dias.map(d => Object.values(porDia[d]).reduce((a, b) => a + b, 0));
+  const { max, passo } = escalaBonita(Math.max(...tot));
+  const W = 680, H = 250, m = { t: 8, r: 8, b: 26, l: 62 }, iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const bw = iw / dias.length, larg = Math.max(4, Math.min(34, bw * 0.62)), y = v => m.t + ih - v / max * ih;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Custo por dia, empilhado por agente">`;
+  for (let v = 0; v <= max + 1e-9; v += passo) {
+    s += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0 ? 'var(--border)' : 'var(--grid)'}"/>`;
+    s += `<text x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end">${$(v)}</text>`;
+  }
+  const cada = Math.ceil(dias.length / 10);
+  dias.forEach((d, i) => {
+    const cx = m.l + bw * i + bw / 2, x = cx - larg / 2; let base = 0;
+    const seg = ativos.filter(g => porDia[d][g] > 0);
+    seg.forEach((g, j) => {
+      const v = porDia[d][g], y0 = y(base), y1 = y(base + v), h = Math.max(0, y0 - y1 - (j > 0 ? 2 : 0));
+      const yy = y1;
+      s += j === seg.length - 1
+        ? `<path d="${topoArredondado(x, yy, larg, h, 4)}" fill="${COR[g]}"/>`
+        : `<rect x="${x}" y="${yy}" width="${larg}" height="${h}" fill="${COR[g]}"/>`;
+      base += v;
+    });
+    if (i % cada === 0 || i === dias.length - 1) {
+      const [a, mm, dd] = d.split('-'); s += `<text x="${cx}" y="${H - 8}" text-anchor="middle">${dd}/${mm}</text>`;
+    }
+    s += `<rect class="hit" data-dia="${d}" x="${m.l + bw * i}" y="${m.t}" width="${bw}" height="${ih}"/>`;
+  });
+  el.innerHTML = s + '</svg>';
+  el.querySelectorAll('.hit').forEach(r => {
+    r.addEventListener('mousemove', ev => {
+      const d = r.dataset.dia, p = porDia[d], total = Object.values(p).reduce((a, b) => a + b, 0);
+      const [a, mm, dd] = d.split('-');
+      const itens = ativos.filter(g => p[g] > 0).sort((a, b) => p[b] - p[a])
+        .map(g => `<div class="l"><span><i style="background:${COR[g]}"></i>${ROT(g)}</span><span>${$(p[g])}</span></div>`).join('');
+      mostrarTip(ev, `<div class="t">${dd}/${mm} · ${$(total)}</div>${itens || '<div class="l">sem uso</div>'}`);
+    });
+    r.addEventListener('mouseleave', esconderTip);
+  });
+}
+
+/* ---------- gráfico por agente ---------- */
+function graficoAgentes(linhas) {
+  const el = document.getElementById('g-agentes');
+  const m = somar(linhas, I.grp), total = [...m.values()].reduce((a, b) => a + b.usd, 0);
+  const itens = D.grupos.filter(g => m.has(g)).map(g => [g, m.get(g)]).sort((a, b) => b[1].usd - a[1].usd);
+  if (!itens.length) { el.innerHTML = '<div class="vazio">Sem consumo no período.</div>'; return; }
+  const W = 440, lin = 34, H = itens.length * lin + 4, rotW = 130, valW = 112, iw = W - rotW - valW;
+  const max = itens[0][1].usd || 1;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Custo por agente">`;
+  itens.forEach(([g, a], i) => {
+    const y = i * lin + 6, w = Math.max(2, a.usd / max * iw);
+    s += `<text class="rot-barra" x="0" y="${y + 15}">${ROT(g)}</text>`;
+    s += `<path d="${pontaArredondada(rotW, y + 4, w, 14, 4)}" fill="${COR[g]}"/>`;
+    s += `<text class="val-barra" x="${rotW + w + 8}" y="${y + 15}">${$(a.usd)} · ${pct(total ? a.usd / total : 0)}</text>`;
+    s += `<rect class="hit" data-g="${g}" x="0" y="${y - 2}" width="${W}" height="${lin - 2}"/>`;
+  });
+  el.innerHTML = s + '</svg>';
+  el.querySelectorAll('.hit').forEach(r => {
+    r.addEventListener('mousemove', ev => {
+      const a = m.get(r.dataset.g);
+      mostrarTip(ev, `<div class="t"><i style="background:${COR[r.dataset.g]}"></i> ${ROT(r.dataset.g)}</div>
+        <div class="l"><span>Custo</span><span>${$(a.usd)}</span></div>
+        <div class="l"><span>Respostas</span><span>${a.msgs}</span></div>
+        <div class="l"><span>Custo por resposta</span><span>${$(a.usd / (a.msgs || 1))}</span></div>
+        <div class="l"><span>Tokens</span><span>${tk(tokens(a))}</span></div>`);
+    });
+    r.addEventListener('mouseleave', esconderTip);
+  });
+}
+
+/* ---------- tabelas ---------- */
+function tabelaAgentes(linhas) {
+  const m = somar(linhas, I.rot), total = [...m.values()].reduce((a, b) => a + b.usd, 0) || 1;
+  const itens = [...m.entries()].sort((a, b) => b[1].usd - a[1].usd);
+  if (!itens.length) { document.getElementById('t-agentes').innerHTML = '<div class="vazio">—</div>'; return; }
+  document.getElementById('t-agentes').innerHTML = `<table><thead><tr><th>Agente</th><th>Entrada</th><th>Cache escrito</th><th>Cache lido</th><th>Saída</th><th>Custo</th></tr></thead><tbody>${
+    itens.map(([r, a]) => `<tr><td><span class="sw" style="background:${COR[a.l[I.grp]]}"></span>${esc(ROT(r))}</td>
+      <td>${tk(a.inp)}</td><td>${tk(a.cw)}</td><td>${tk(a.cr)}</td><td>${tk(a.out)}</td>
+      <td>${$(a.usd)}<span class="mini" style="width:${Math.round(a.usd / total * 40)}px"></span></td></tr>`).join('')
+  }</tbody></table>`;
+}
+function tabelaSessoes(linhas) {
+  const m = somar(linhas, l => l[I.ses] + '|' + l[I.proj]);
+  const ag = {}; for (const l of linhas) { const k = l[I.ses] + '|' + l[I.proj]; (ag[k] = ag[k] || new Set()).add(l[I.grp]); }
+  const dia = {}; for (const l of linhas) { const k = l[I.ses] + '|' + l[I.proj]; if (!dia[k] || l[I.dia] > dia[k]) dia[k] = l[I.dia]; }
+  const itens = [...m.entries()].sort((a, b) => b[1].usd - a[1].usd).slice(0, 8);
+  document.getElementById('t-sessoes').innerHTML = itens.length ? `<table><thead><tr><th>Sessão</th><th>Projeto</th><th>Último dia</th><th>Agentes</th><th>Custo</th></tr></thead><tbody>${
+    itens.map(([k, a]) => { const [s, p] = k.split('|'); const [y, mm, dd] = dia[k].split('-');
+      return `<tr><td><code>${esc(s)}</code></td><td>${esc(p)}</td><td>${dd}/${mm}</td>
+      <td>${[...ag[k]].map(g => `<span class="sw" title="${esc(ROT(g))}" style="background:${COR[g]};margin-right:3px"></span>`).join('')}</td><td>${$(a.usd)}</td></tr>`; }).join('')
+  }</tbody></table>` : '<div class="vazio">—</div>';
+}
+function tabelaModelos(linhas) {
+  const m = somar(linhas, I.mod), total = [...m.values()].reduce((a, b) => a + b.usd, 0) || 1;
+  const itens = [...m.entries()].sort((a, b) => b[1].usd - a[1].usd);
+  document.getElementById('t-modelos').innerHTML = itens.length ? `<table><thead><tr><th>Modelo</th><th>Respostas</th><th>Tokens</th><th>Custo</th><th>%</th></tr></thead><tbody>${
+    itens.map(([k, a]) => `<tr><td>${esc(k.replace('claude-', ''))}</td><td>${a.msgs}</td><td>${tk(tokens(a))}</td><td>${$(a.usd)}</td><td>${pct(a.usd / total)}</td></tr>`).join('')
+  }</tbody></table>` : '<div class="vazio">—</div>';
+}
+
+/* ---------- recomendações ---------- */
+function recomendacoes(linhas) {
+  const recs = [], total = linhas.reduce((a, l) => a + l[I.usd], 0);
+  const ICON = { critico: ['!', 'var(--critical)'], atencao: ['!', 'var(--serious)'], dica: ['i', 'var(--accent)'], ok: ['✓', 'var(--good)'] };
+  if (total > 0) {
+    const pg = somar(linhas, I.grp);
+    const opusFora = linhas.filter(l => /opus|fable|mythos/.test(l[I.mod]) && !['architect', 'tech-lead'].includes(l[I.grp]));
+    const vOpus = opusFora.reduce((a, l) => a + l[I.usd], 0);
+    if (vOpus / total > 0.15) recs.push(['atencao', `${pct(vOpus / total)} do custo é modelo topo de linha fora do Architect/Tech Lead`,
+      'Implementação e testes costumam ir bem com Sonnet. Ajuste <code>model:</code> no arquivo do agente.']);
+    for (const [g, a] of pg) {
+      const ent = a.inp + a.cw + a.cr;
+      if (ent > 0 && a.usd / total > 0.08 && a.cr / ent < 0.6) recs.push(['atencao', `${ROT(g)}: só ${pct(a.cr / ent)} da entrada veio do cache`,
+        'Pausas maiores que o tempo de vida do cache (5 min) fazem reler tudo. Considere <code>"subagentPromptCacheTtl": "1h"</code> ou encerrar o agente quando ficar ocioso.']);
+    }
+    const ps = somar(linhas, l => l[I.ses]); const maior = [...ps.entries()].sort((a, b) => b[1].usd - a[1].usd)[0];
+    if (maior && ps.size > 2 && maior[1].usd / total > 0.35) recs.push(['dica', `A sessão ${maior[0]} concentrou ${pct(maior[1].usd / total)} do custo`,
+      'Sessões longas arrastam o contexto inteiro em cada resposta. Use <code>/clear</code> entre tarefas e <code>/compact</code> quando passar de ~70%.']);
+    for (const [g, a] of pg) {
+      if (a.usd / total > 0.1 && a.msgs > 10) {
+        const caro = a.usd / a.msgs, media = total / linhas.reduce((x, l) => x + l[I.msgs], 0);
+        if (caro > media * 2.2) recs.push(['dica', `${ROT(g)} custa ${(caro / media).toFixed(1).replace('.', ',')}× a média por resposta`,
+          'Prompts de criação mais focados e <code>effort</code> menor em tarefas de rotina ajudam.']);
+      }
+    }
+    const outros = pg.get('outros');
+    if (outros && outros.usd / total > 0.2) recs.push(['dica', `Subagentes fora do time somam ${pct(outros.usd / total)}`,
+      'Veja na tabela de detalhe quais são. Se forem buscas, o Explore (Haiku) é o mais barato.']);
+    const ativos = new Set(linhas.filter(l => EQUIPE_ATIVA(l)).map(l => l[I.grp])).size;
+    if (ativos >= 6) recs.push(['dica', 'Os 6 papéis estiveram ativos', 'Nem toda tarefa precisa do time inteiro: para um bug, Backend + QA costumam bastar.']);
+  }
+  if (!recs.length) recs.push(['ok', 'Nada fora do normal no período', 'Distribuição de custo e uso de cache parecem saudáveis.']);
+  document.getElementById('recs').innerHTML = recs.slice(0, 5).map(([t, a, b]) =>
+    `<li><span class="ic" style="background:${ICON[t][1]}" aria-label="${t}">${ICON[t][0]}</span><div><b>${a}</b><small>${b}</small></div></li>`).join('');
+}
+function EQUIPE_ATIVA(l) { return !['principal', 'outros'].includes(l[I.grp]); }
+
+/* ---------- montagem ---------- */
+function render() {
+  document.querySelectorAll('#periodo button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.d === estado.dias));
+  const linhas = filtrar();
+  kpis(linhas); graficoDias(linhas); graficoAgentes(linhas); tabelaAgentes(linhas);
+  recomendacoes(linhas); tabelaSessoes(linhas); tabelaModelos(linhas);
+}
+document.getElementById('gerado').textContent = `Atualizado em ${D.gerado} · custos estimados a preço de tabela`;
+document.getElementById('demo').hidden = !D.demo;
+document.querySelectorAll('#periodo button').forEach(b => {
+  if (+b.dataset.d > D.dias) b.hidden = true;
+  b.addEventListener('click', () => { estado.dias = +b.dataset.d; salvar(); render(); });
+});
+const projetos = [...new Set(D.linhas.map(l => l[I.proj]))].sort();
+const sel = document.getElementById('projeto');
+sel.innerHTML = `<option value="">Todos os projetos</option>` + projetos.map(p => `<option ${p === estado.projeto ? 'selected' : ''}>${esc(p)}</option>`).join('');
+if (estado.projeto && !projetos.includes(estado.projeto)) estado.projeto = '';
+sel.addEventListener('change', () => { estado.projeto = sel.value; salvar(); render(); });
+document.getElementById('rodape').innerHTML = `Fonte: transcrições locais do Claude Code em <code>~/.claude/projects</code>. Custos a preço de tabela (edite <code>precos.json</code>);
+  em planos Pro/Max/Team o que conta é o limite do plano — veja <code>/usage</code>.` +
+  (D.semPreco.length ? ` <b>Sem preço cadastrado:</b> ${D.semPreco.map(esc).join(', ')}.` : '');
+render();
+</script>
+</body>
+</html>

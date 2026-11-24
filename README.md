@@ -51,6 +51,17 @@ Regras de decisão, para discutir e ajustar:
 - Meta só fica "Concluída" quando o acumulado chega ao alvo; passou do prazo sem chegar, fica "Atrasada".
 - Valores e datas aceitam o formato brasileiro (`R$ 1.234,56`, `05/03/2026`); CSV usa `;`.
 
+## Time de agentes (Claude Code)
+
+O projeto vem com um time de agentes (Tech Lead, Architect, Backend, Frontend, QA e Gerente de Projeto).
+Protocolo em `CLAUDE.md`, papéis em `.claude/agents/`, estado e decisões em `docs/project/` e `docs/adr/`.
+
+```bash
+claude --agent tech-lead
+```
+
+Depois, dentro do Claude Code: `/kickoff <objetivo>`. Detalhes e monitor de tokens: `tools/time-agentes/README.md`.
+
 ## Licença
 
 MIT, ver [LICENSE](LICENSE).
