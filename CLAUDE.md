@@ -6,8 +6,8 @@ App pessoal de tarefas (inspirado no TickTick) com controle financeiro. Monorepo
 
 | Pasta | O que é | Testes |
 |---|---|---|
-| `packages/core/` | `@ticktick/core`: TypeScript puro, sem dependências. Parser de quick-add (`src/parser/`) e cálculos financeiros (`src/finance/`) | `node:test` (`*.test.ts` ao lado do código) |
-| `apps/web/` | `@ticktick/web`: React 19 + TanStack Start em modo SPA (build estático em `dist/client/`) + Tailwind 4 + shadcn/ui. Importa a lógica de `@ticktick/core`. Banco local em `src/db/` (Dexie/IndexedDB) | Vitest + Testing Library + fake-indexeddb (`src/test/`) |
+| `packages/core/` | `@ticktick/core`: TypeScript puro, sem dependências. Parser de quick-add (`src/parser/`), recorrência (`src/recurrence/`), tarefas e listas inteligentes (`src/tasks/`) e cálculos financeiros (`src/finance/`) | `node:test` (`*.test.ts` ao lado do código) |
+| `apps/web/` | `@ticktick/web`: React 19 + TanStack Start em modo SPA (build estático em `dist/client/`) + Tailwind 4 + shadcn/ui. Importa a lógica de `@ticktick/core`. Rotas: `/` tarefas, `/financas`. Banco local em `src/db/` (Dexie/IndexedDB, esquema em `banco.ts`) | Vitest + Testing Library + fake-indexeddb (`src/test/`) |
 | `apps/api/` | Ainda não existe. Será Python (FastAPI + PostgreSQL), ver `docs/adr/0002-stack-do-back-end.md` | pytest |
 | `docs/adr/` | Decisões registradas | — |
 | `docs/project/` | Plano completo (`plano.md`), escopo, status | — |

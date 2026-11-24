@@ -2,7 +2,6 @@ import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { resumoMes } from "@ticktick/core";
 import {
-  FinancasDB,
   adicionarMeta,
   adicionarMov,
   alternarPago,
@@ -15,18 +14,19 @@ import {
   semearSeNecessario,
   type NovaMov,
 } from "@/db/financas";
+import { TickTickDB } from "@/db/banco";
 
 // Cada teste usa um banco novo. "Reabrir" o banco simula recarregar a página.
 let nome: string;
-let banco: FinancasDB;
+let banco: TickTickDB;
 const reabrir = () => {
   banco.close();
-  banco = new FinancasDB(nome);
+  banco = new TickTickDB(nome);
 };
 
 beforeEach(() => {
   nome = `teste-${crypto.randomUUID()}`;
-  banco = new FinancasDB(nome);
+  banco = new TickTickDB(nome);
 });
 afterEach(async () => {
   await banco.delete();

@@ -1,69 +1,71 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-  Legend,
-} from "recharts";
-import {
-  ArrowDownCircle,
-  ArrowUpCircle,
-  PiggyBank,
-  Wallet,
-  Plus,
-  Trash2,
-  Target,
-  LayoutDashboard,
-  List,
+  CalendarDays,
+  CalendarClock,
   CalendarRange,
-  BookOpen,
-  Check,
+  CheckCircle2,
+  Ban,
+  Inbox,
+  List as ListIcon,
+  ListTodo,
+  Repeat,
+  RotateCcw,
+  Sun,
+  Trash2,
+  Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  TIPOS,
-  CATEGORIAS,
-  CONTAS,
-  brl,
+  atrasada,
+  descreverRegra,
+  filtrarInteligente,
+  filtrarLista,
   hojeLocal,
-  parseValor,
-  porCategoria,
-  resumoAno,
-  resumoMes,
-  statusMeta,
-  type Meta,
-  type Mov,
-  type Tipo,
+  INBOX_ID,
+  LISTAS_INTELIGENTES,
+  NOMES_INTELIGENTES,
+  parseQuickAdd,
+  type Lista,
+  type ListaInteligente,
+  type Tarefa,
 } from "@ticktick/core";
 import {
-  adicionarMeta,
-  adicionarMov,
-  alternarPago,
-  aportarMeta,
-  excluirMeta,
-  excluirMov,
-  limparTudo,
-  type NovaMeta as DadosMeta,
-  type NovaMov as DadosMov,
-} from "@/db/financas";
-import { useFinancas } from "@/db/useFinancas";
+  concluirTarefa,
+  criarDoTexto,
+  moverParaLixeira,
+  reabrirTarefa,
+  restaurarTarefa,
+  TituloVazioError,
+} from "@/db/tarefas";
+import { useTarefas } from "@/db/useTarefas";
+import { COR_PRIORIDADE, NOMES_PRIORIDADE, NOMES_TRECHO, rotuloData } from "@/lib/rotulos";
 
-/** Grava no banco local; avisa se falhar (ex.: navegador sem IndexedDB ou modo privado restrito). */
+export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Tarefas — TickTick" },
+      { name: "description", content: "Suas tarefas, com captura rápida em português." },
+    ],
+  }),
+  component: PaginaTarefas,
+});
+
+/** O que está aberto na tela: uma lista inteligente ou uma lista comum (pelo id). */
+type Visao = { tipo: "inteligente"; id: ListaInteligente } | { tipo: "lista"; id: string };
+
+const ICONES: Record<ListaInteligente, typeof Sun> = {
+  hoje: Sun,
+  amanha: CalendarDays,
+  proximos7: CalendarRange,
+  tudo: ListTodo,
+  concluidas: CheckCircle2,
+  lixeira: Trash2,
+};
+
+/** Grava no banco local; avisa se falhar. */
 function salvar(p: Promise<unknown>, sucesso?: string) {
   p.then(
     () => sucesso && toast.success(sucesso),
@@ -74,657 +76,337 @@ function salvar(p: Promise<unknown>, sucesso?: string) {
   );
 }
 
-export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Controle Financeiro — Painel com gráficos" },
-      {
-        name: "description",
-        content:
-          "Registre entradas, despesas e investimentos e acompanhe gráficos, resumo mensal e metas.",
-      },
-      { property: "og:title", content: "Controle Financeiro" },
-      {
-        property: "og:description",
-        content: "Seu dinheiro em gráficos: painel, movimentações, resumo mensal e metas.",
-      },
-    ],
-  }),
-  component: App,
-});
+function PaginaTarefas() {
+  const { tarefas, listas } = useTarefas();
+  const [visao, setVisao] = useState<Visao>({ tipo: "inteligente", id: "hoje" });
+  const hoje = hojeLocal();
 
-const ymNow = hojeLocal().slice(0, 7);
-type Aba = "painel" | "movs" | "mensal" | "metas" | "ajuda";
-const ABAS: { id: Aba; label: string; icon: typeof List }[] = [
-  { id: "painel", label: "Painel", icon: LayoutDashboard },
-  { id: "movs", label: "Movimentações", icon: List },
-  { id: "mensal", label: "Resumo mensal", icon: CalendarRange },
-  { id: "metas", label: "Metas", icon: Target },
-  { id: "ajuda", label: "Como usar", icon: BookOpen },
-];
-const PIE = [
-  "var(--chart-1)",
-  "var(--chart-2)",
-  "var(--chart-3)",
-  "var(--chart-4)",
-  "var(--chart-5)",
-  "var(--accent)",
-  "var(--muted-foreground)",
-];
-const sel = "h-10 w-full rounded-md border border-input bg-card px-3 text-sm";
-
-function App() {
-  const [aba, setAba] = useState<Aba>("painel");
-  const { movs, metas } = useFinancas();
-  const [ym, setYm] = useState(ymNow);
-  const [novo, setNovo] = useState<Tipo | null>(null);
-  const [novaMeta, setNovaMeta] = useState(false);
-  const [filtro, setFiltro] = useState<Tipo | "Todos">("Todos");
-
-  const r = useMemo(() => resumoMes(movs, ym), [movs, ym]);
-  const cats = useMemo(
+  const visiveis = useMemo(
     () =>
-      porCategoria(movs, ym)
-        .filter((c) => c.valor > 0)
-        .sort((a, b) => b.valor - a.valor),
-    [movs, ym],
+      visao.tipo === "inteligente"
+        ? filtrarInteligente(tarefas, visao.id, hoje)
+        : filtrarLista(tarefas, visao.id),
+    [tarefas, visao, hoje],
   );
-  const ano = useMemo(() => resumoAno(movs, Number(ym.slice(0, 4))), [movs, ym]);
+  const contagem = (id: ListaInteligente) => filtrarInteligente(tarefas, id, hoje).length;
+  const nomeLista = useMemo(() => new Map(listas.map((l) => [l.id, l.nome])), [listas]);
+  const titulo =
+    visao.tipo === "inteligente"
+      ? NOMES_INTELIGENTES[visao.id]
+      : (nomeLista.get(visao.id) ?? "Lista");
+  const podeCriar = !(
+    visao.tipo === "inteligente" &&
+    (visao.id === "concluidas" || visao.id === "lixeira")
+  );
 
   return (
-    <div className="min-h-screen pb-16">
-      <header className="bg-hero text-primary-foreground">
-        <div className="mx-auto max-w-6xl px-4 pt-8 pb-20">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="text-sm opacity-80">Seu dinheiro, em tempo real</p>
-              <h1 className="font-display text-3xl font-bold md:text-4xl">Controle Financeiro</h1>
-            </div>
-            <label className="text-sm">
-              <span className="mr-2 opacity-80">Mês de análise</span>
-              <input
-                type="month"
-                value={ym}
-                onChange={(e) => setYm(e.target.value || ymNow)}
-                className="rounded-md bg-primary-foreground/15 px-3 py-2 text-primary-foreground"
-              />
-            </label>
-          </div>
-          <nav className="mt-6 flex flex-wrap gap-2">
-            {ABAS.map((a) => (
-              <button
-                key={a.id}
-                onClick={() => setAba(a.id)}
-                className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${aba === a.id ? "bg-accent text-accent-foreground" : "bg-primary-foreground/10 hover:bg-primary-foreground/20"}`}
-              >
-                <a.icon className="h-4 w-4" /> {a.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </header>
-
-      <main className="mx-auto -mt-12 max-w-6xl space-y-6 px-4">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Kpi label="Entradas" v={r.entradas} icon={ArrowUpCircle} cls="text-income" />
-          <Kpi label="Despesas" v={r.despesas} icon={ArrowDownCircle} cls="text-expense" />
-          <Kpi label="Investimentos" v={r.investimentos} icon={PiggyBank} cls="text-invest" />
-          <Kpi
-            label="Saldo do mês"
-            v={r.saldo}
-            icon={Wallet}
-            cls={r.saldo >= 0 ? "text-primary" : "text-destructive"}
+    <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 md:flex-row">
+      <BarraLateral
+        visao={visao}
+        setVisao={setVisao}
+        listas={listas}
+        contagem={contagem}
+        contagemLista={(id) => filtrarLista(tarefas, id).length}
+      />
+      <main className="min-w-0 flex-1">
+        <h1 className="font-display text-2xl font-bold">{titulo}</h1>
+        {podeCriar && (
+          <QuickAdd
+            listaPadrao={visao.tipo === "lista" ? visao.id : undefined}
+            dicaData={visao.tipo === "inteligente" && visao.id === "amanha" ? "amanhã" : undefined}
           />
-        </div>
-
-        {aba === "painel" && (
-          <div className="grid gap-6 lg:grid-cols-5">
-            <Card className="p-5 shadow-soft lg:col-span-3">
-              <h2 className="font-display font-semibold">Evolução do ano</h2>
-              <div className="h-72">
-                <ResponsiveContainer>
-                  <BarChart data={ano}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                    <XAxis dataKey="mes" fontSize={12} />
-                    <YAxis fontSize={12} />
-                    <Tooltip formatter={(v: number) => brl(v)} />
-                    <Legend />
-                    <Bar dataKey="entradas" name="Entradas" fill="var(--income)" radius={4} />
-                    <Bar dataKey="despesas" name="Despesas" fill="var(--expense)" radius={4} />
-                    <Bar
-                      dataKey="investimentos"
-                      name="Investimentos"
-                      fill="var(--invest)"
-                      radius={4}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-            <Card className="p-5 shadow-soft lg:col-span-2">
-              <h2 className="font-display font-semibold">Despesas por categoria</h2>
-              {cats.length ? (
-                <>
-                  <div className="h-52">
-                    <ResponsiveContainer>
-                      <PieChart>
-                        <Pie
-                          data={cats}
-                          dataKey="valor"
-                          nameKey="categoria"
-                          innerRadius={50}
-                          outerRadius={85}
-                          paddingAngle={2}
-                        >
-                          {cats.map((_, i) => (
-                            <Cell key={i} fill={PIE[i % PIE.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(v: number) => brl(v)} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <ul className="space-y-1 text-sm">
-                    {cats.map((c, i) => (
-                      <li key={c.categoria} className="flex items-center justify-between">
-                        <span className="flex items-center gap-2">
-                          <span
-                            className="h-2.5 w-2.5 rounded-full"
-                            style={{ background: PIE[i % PIE.length] }}
-                          />
-                          {c.categoria}
-                        </span>
-                        <span className="text-muted-foreground">
-                          {brl(c.valor)} · {(c.pct * 100).toFixed(1)}%
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              ) : (
-                <p className="py-16 text-center text-sm text-muted-foreground">
-                  Nenhuma despesa neste mês.
-                </p>
-              )}
-            </Card>
-            <Card className="p-5 shadow-soft lg:col-span-5">
-              <h2 className="font-display font-semibold">Saldo mês a mês</h2>
-              <div className="h-56">
-                <ResponsiveContainer>
-                  <LineChart data={ano}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                    <XAxis dataKey="mes" fontSize={12} />
-                    <YAxis fontSize={12} />
-                    <Tooltip formatter={(v: number) => brl(v)} />
-                    <Line
-                      type="monotone"
-                      dataKey="saldo"
-                      name="Saldo"
-                      stroke="var(--primary)"
-                      strokeWidth={3}
-                      dot={{ r: 4 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-          </div>
         )}
-
-        {aba === "movs" && (
-          <Card className="p-5 shadow-soft">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex flex-wrap gap-2">
-                {(["Todos", "Entrada", "Despesa", "Investimento"] as const).map((t) => (
-                  <Button
-                    key={t}
-                    size="sm"
-                    variant={filtro === t ? "default" : "outline"}
-                    onClick={() => setFiltro(t)}
-                  >
-                    {t}
-                  </Button>
-                ))}
-              </div>
-              <Button onClick={() => setNovo("Despesa")}>
-                <Plus className="h-4 w-4" /> Nova movimentação
-              </Button>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="text-left text-muted-foreground">
-                  <tr>
-                    {["Data", "Tipo", "Descrição", "Categoria", "Conta", "Valor", "Pago?", ""].map(
-                      (h) => (
-                        <th key={h} className="px-2 py-2 font-medium">
-                          {h}
-                        </th>
-                      ),
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {movs
-                    .filter((m) => filtro === "Todos" || m.tipo === filtro)
-                    .sort((a, b) => b.data.localeCompare(a.data))
-                    .map((m) => (
-                      <tr key={m.id} className="border-t">
-                        <td className="px-2 py-2">{m.data.split("-").reverse().join("/")}</td>
-                        <td
-                          className={`px-2 font-medium ${m.tipo === "Entrada" ? "text-income" : m.tipo === "Despesa" ? "text-expense" : "text-invest"}`}
-                        >
-                          {m.tipo}
-                        </td>
-                        <td className="px-2">{m.descricao}</td>
-                        <td className="px-2">{m.categoria}</td>
-                        <td className="px-2">{m.contaId}</td>
-                        <td className="px-2 font-semibold">{brl(m.valor)}</td>
-                        <td className="px-2">
-                          <button
-                            onClick={() => salvar(alternarPago(m.id))}
-                            className={`rounded-full px-2 py-0.5 text-xs ${m.status === "pago" ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground"}`}
-                          >
-                            {m.status === "pago" ? "Sim" : "Não"}
-                          </button>
-                        </td>
-                        <td className="px-2">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => salvar(excluirMov(m.id))}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        )}
-
-        {aba === "mensal" && (
-          <Card className="overflow-x-auto p-5 shadow-soft">
-            <h2 className="mb-3 font-display font-semibold">Resumo de {ym.slice(0, 4)}</h2>
-            <table className="w-full text-sm">
-              <thead className="text-left text-muted-foreground">
-                <tr>
-                  {["Mês", "Entradas", "Despesas", "Investimentos", "Saldo"].map((h) => (
-                    <th key={h} className="px-2 py-2 font-medium">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {ano.map((a) => (
-                  <tr key={a.mes} className="border-t">
-                    <td className="px-2 py-2 capitalize">{a.mes}</td>
-                    <td className="px-2 text-income">{brl(a.entradas)}</td>
-                    <td className="px-2 text-expense">{brl(a.despesas)}</td>
-                    <td className="px-2 text-invest">{brl(a.investimentos)}</td>
-                    <td className={`px-2 font-semibold ${a.saldo < 0 ? "text-destructive" : ""}`}>
-                      {brl(a.saldo)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
-        )}
-
-        {aba === "metas" && (
-          <div className="space-y-4">
-            <div className="flex justify-end">
-              <Button onClick={() => setNovaMeta(true)}>
-                <Plus className="h-4 w-4" /> Nova meta
-              </Button>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              {metas.map((m) => {
-                const s = statusMeta(m);
-                return (
-                  <Card key={m.id} className="space-y-3 p-5 shadow-soft">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-display font-semibold">{m.nome}</h3>
-                        <p className="text-xs text-muted-foreground">
-                          {m.prazo
-                            ? `Prazo: ${m.prazo.split("-").reverse().join("/")}`
-                            : "Sem prazo"}
-                        </p>
-                      </div>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${s.status === "Concluída" ? "bg-secondary text-secondary-foreground" : s.status === "Atrasada" ? "bg-destructive text-destructive-foreground" : "bg-accent text-accent-foreground"}`}
-                      >
-                        {s.status}
-                      </span>
-                    </div>
-                    <Progress value={Math.min(s.pct * 100, 100)} />
-                    <div className="flex justify-between text-sm">
-                      <span>
-                        {brl(m.atual)} de {brl(m.alvo)}
-                      </span>
-                      <span className="text-muted-foreground">
-                        Falta {brl(s.falta)} · {(s.pct * 100).toFixed(0)}%
-                      </span>
-                    </div>
-                    <div className="flex gap-2">
-                      {[100, 500].map((v) => (
-                        <Button
-                          key={v}
-                          size="sm"
-                          variant="outline"
-                          onClick={() => salvar(aportarMeta(m.id, v))}
-                        >
-                          + {brl(v)}
-                        </Button>
-                      ))}
-                      <Button size="sm" variant="ghost" onClick={() => salvar(excluirMeta(m.id))}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {aba === "ajuda" && (
-          <Card className="p-5 shadow-soft">
-            <h2 className="font-display text-xl font-semibold">
-              Como usar — escolha o que quer fazer
-            </h2>
-            <p className="mb-5 text-sm text-muted-foreground">
-              Toque em um botão e o app já leva você para a função certa.
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <Acao
-                n="1"
-                t="Registrar entrada"
-                s="Salário, freela, vendas"
-                icon={ArrowUpCircle}
-                cls="text-income"
-                on={() => setNovo("Entrada")}
-              />
-              <Acao
-                n="2"
-                t="Registrar despesa"
-                s="Gastos do dia a dia"
-                icon={ArrowDownCircle}
-                cls="text-expense"
-                on={() => setNovo("Despesa")}
-              />
-              <Acao
-                n="3"
-                t="Registrar investimento"
-                s="Aportes e aplicações"
-                icon={PiggyBank}
-                cls="text-invest"
-                on={() => setNovo("Investimento")}
-              />
-              <Acao
-                n="4"
-                t="Ver painel"
-                s="Resumo do mês e gráficos"
-                icon={LayoutDashboard}
-                cls="text-primary"
-                on={() => setAba("painel")}
-              />
-              <Acao
-                n="5"
-                t="Ver resumo mensal"
-                s="Os 12 meses do ano"
-                icon={CalendarRange}
-                cls="text-primary"
-                on={() => setAba("mensal")}
-              />
-              <Acao
-                n="6"
-                t="Criar uma meta"
-                s="Acompanhe o % concluído"
-                icon={Target}
-                cls="text-primary"
-                on={() => {
-                  setAba("metas");
-                  setNovaMeta(true);
-                }}
-              />
-            </div>
-            <p className="mt-5 rounded-lg bg-muted p-3 text-sm">
-              <b>Importante:</b> digite os valores como números positivos — o tipo escolhido define
-              se é entrada, despesa ou investimento.
-            </p>
-            <Button
-              variant="outline"
-              className="mt-3"
-              onClick={() => {
-                salvar(limparTudo(), "Dados apagados");
-              }}
-            >
-              Começar do zero (apagar exemplos)
-            </Button>
-          </Card>
-        )}
+        <ListaDeTarefas
+          tarefas={visiveis}
+          hoje={hoje}
+          nomeLista={visao.tipo === "inteligente" ? nomeLista : null}
+          vazio={
+            visao.tipo === "inteligente" && visao.id === "lixeira"
+              ? "A lixeira está vazia."
+              : visao.tipo === "inteligente" && visao.id === "concluidas"
+                ? "Nada concluído ainda."
+                : "Nenhuma tarefa aqui. Digite acima para criar."
+          }
+        />
       </main>
-
-      <NovaMov
-        tipo={novo}
-        onClose={() => setNovo(null)}
-        onSave={(m) => {
-          setNovo(null);
-          setYm(m.data.slice(0, 7));
-          salvar(adicionarMov(m), `${m.tipo} adicionada`);
-        }}
-      />
-      <NovaMeta
-        open={novaMeta}
-        onClose={() => setNovaMeta(false)}
-        onSave={(m) => {
-          setNovaMeta(false);
-          salvar(adicionarMeta(m), "Meta criada");
-        }}
-      />
     </div>
   );
 }
 
-function Kpi({
-  label,
-  v,
-  icon: Icon,
-  cls,
+function BarraLateral({
+  visao,
+  setVisao,
+  listas,
+  contagem,
+  contagemLista,
 }: {
-  label: string;
-  v: number;
-  icon: typeof Wallet;
-  cls: string;
+  visao: Visao;
+  setVisao: (v: Visao) => void;
+  listas: Lista[];
+  contagem: (id: ListaInteligente) => number;
+  contagemLista: (id: string) => number;
 }) {
+  const item = (ativo: boolean) =>
+    `flex w-full shrink-0 items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition ${
+      ativo ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+    }`;
   return (
-    <Card className="p-4 shadow-soft">
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
-        {label}
-        <Icon className={`h-5 w-5 ${cls}`} />
-      </div>
-      <p className={`mt-1 font-display text-xl font-bold md:text-2xl ${cls}`}>{brl(v)}</p>
-    </Card>
-  );
-}
-
-function Acao({
-  n,
-  t,
-  s,
-  icon: Icon,
-  cls,
-  on,
-}: {
-  n: string;
-  t: string;
-  s: string;
-  icon: typeof Wallet;
-  cls: string;
-  on: () => void;
-}) {
-  return (
-    <button
-      onClick={on}
-      className="group flex items-center gap-3 rounded-xl border bg-card p-4 text-left transition hover:-translate-y-0.5 hover:shadow-soft"
-    >
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-muted">
-        <Icon className={`h-6 w-6 ${cls}`} />
-      </span>
-      <span>
-        <span className="block font-semibold">
-          {n}. {t}
-        </span>
-        <span className="text-sm text-muted-foreground">{s}</span>
-      </span>
-    </button>
-  );
-}
-
-function NovaMov({
-  tipo,
-  onClose,
-  onSave,
-}: {
-  tipo: Tipo | null;
-  onClose: () => void;
-  onSave: (m: DadosMov) => void;
-}) {
-  return (
-    <Dialog open={!!tipo} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Nova movimentação</DialogTitle>
-        </DialogHeader>
-        {tipo && (
-          <form
-            key={tipo}
-            className="space-y-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const f = new FormData(e.currentTarget);
-              const valor = parseValor(String(f.get("valor")));
-              if (!valor || valor <= 0) {
-                toast.error("Informe um valor positivo");
-                return;
-              }
-              onSave({
-                data: String(f.get("data")),
-                tipo: f.get("tipo") as Tipo,
-                descricao: String(f.get("descricao")),
-                categoria: String(f.get("categoria")),
-                contaId: String(f.get("conta")),
-                valor,
-                status: f.get("pago") === "on" ? "pago" : "pendente",
-              });
-            }}
-          >
-            <div className="grid grid-cols-3 gap-2">
-              {TIPOS.filter((t) => t !== "Transferência").map((t) => (
-                <label key={t} className="cursor-pointer">
-                  <input
-                    type="radio"
-                    name="tipo"
-                    value={t}
-                    defaultChecked={t === tipo}
-                    className="peer sr-only"
-                  />
-                  <span className="block rounded-md border p-2 text-center text-sm peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground">
-                    {t}
-                  </span>
-                </label>
-              ))}
-            </div>
-            <Input name="descricao" placeholder="Descrição" required />
-            <div className="grid grid-cols-2 gap-2">
-              <Input name="valor" inputMode="decimal" placeholder="Valor (R$)" required />
-              <Input name="data" type="date" defaultValue={hojeLocal()} required />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <select
-                name="categoria"
-                className={sel}
-                defaultValue={tipo === "Investimento" ? "Investimentos" : "Outros"}
+    <nav aria-label="Listas" className="md:w-56 md:shrink-0">
+      <ul className="flex gap-1 overflow-x-auto pb-2 md:flex-col md:overflow-visible md:pb-0">
+        {LISTAS_INTELIGENTES.map((id) => {
+          const Icone = ICONES[id];
+          const ativo = visao.tipo === "inteligente" && visao.id === id;
+          const n = id === "concluidas" || id === "lixeira" ? 0 : contagem(id);
+          return (
+            <li key={id} className="shrink-0 md:shrink">
+              <button
+                className={item(ativo)}
+                aria-current={ativo ? "page" : undefined}
+                onClick={() => setVisao({ tipo: "inteligente", id })}
               >
-                {CATEGORIAS.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
-              <select name="conta" className={sel}>
-                {CONTAS.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name="pago" defaultChecked /> Já foi pago/recebido
-            </label>
-            <Button type="submit" className="w-full">
-              <Check className="h-4 w-4" /> Salvar
-            </Button>
-          </form>
-        )}
-      </DialogContent>
-    </Dialog>
+                <Icone className="h-4 w-4" aria-hidden />
+                <span className="flex-1 whitespace-nowrap">{NOMES_INTELIGENTES[id]}</span>
+                {n > 0 && <span className="text-xs opacity-70">{n}</span>}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      <h2 className="mt-4 hidden px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:block">
+        Listas
+      </h2>
+      <ul className="flex gap-1 overflow-x-auto md:mt-1 md:flex-col md:overflow-visible">
+        {listas.map((l) => {
+          const ativo = visao.tipo === "lista" && visao.id === l.id;
+          const Icone = l.id === INBOX_ID ? Inbox : ListIcon;
+          const n = contagemLista(l.id);
+          return (
+            <li key={l.id} className="shrink-0 md:shrink">
+              <button
+                className={item(ativo)}
+                aria-current={ativo ? "page" : undefined}
+                onClick={() => setVisao({ tipo: "lista", id: l.id })}
+              >
+                <Icone className="h-4 w-4" aria-hidden />
+                <span className="flex-1 truncate whitespace-nowrap">{l.nome}</span>
+                {n > 0 && <span className="text-xs opacity-70">{n}</span>}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }
 
-function NovaMeta({
-  open,
-  onClose,
-  onSave,
+function QuickAdd({
+  listaPadrao,
+  dicaData,
 }: {
-  open: boolean;
-  onClose: () => void;
-  onSave: (m: DadosMeta) => void;
+  listaPadrao?: string | undefined;
+  dicaData?: string | undefined;
 }) {
+  const [texto, setTexto] = useState("");
+  const previa = useMemo(() => (texto.trim() ? parseQuickAdd(texto) : null), [texto]);
+
+  const enviar = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!texto.trim()) return;
+    try {
+      await criarDoTexto(texto, listaPadrao ? { listaPadrao } : {});
+      setTexto("");
+    } catch (err) {
+      if (err instanceof TituloVazioError) toast.error("Escreva o que é a tarefa, além da data");
+      else {
+        console.error(err);
+        toast.error("Não foi possível salvar neste navegador");
+      }
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Nova meta</DialogTitle>
-        </DialogHeader>
-        <form
-          className="space-y-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const f = new FormData(e.currentTarget);
-            const alvo = Number(f.get("alvo"));
-            if (!alvo) {
-              toast.error("Informe o valor alvo");
-              return;
-            }
-            onSave({
-              nome: String(f.get("nome")),
-              alvo,
-              atual: Number(f.get("atual")) || 0,
-              prazo: String(f.get("prazo")) || undefined,
-            });
-          }}
+    <form onSubmit={enviar} className="mt-4">
+      <label htmlFor="quick-add" className="sr-only">
+        Nova tarefa
+      </label>
+      <Input
+        id="quick-add"
+        value={texto}
+        onChange={(e) => setTexto(e.target.value)}
+        placeholder={`Nova tarefa: "pagar boleto ${dicaData ?? "amanhã"} 15h !alta #casa ~pessoal"`}
+        autoComplete="off"
+        className="h-11 bg-card"
+      />
+      {previa && (
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-sm" aria-live="polite">
+          <span className="text-muted-foreground">
+            Título: <b className="text-foreground">{previa.title || "—"}</b>
+          </span>
+          {previa.matches.map((m) => (
+            <span
+              key={`${m.start}-${m.kind}`}
+              className="rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground"
+            >
+              {NOMES_TRECHO[m.kind]}: {m.text}
+            </span>
+          ))}
+          {previa.date && (
+            <span className="text-xs text-muted-foreground">
+              → {rotuloData(previa.date, hojeLocal())}
+              {previa.time ? ` às ${previa.time}` : ""}
+              {previa.rrule ? `, ${descreverRegra(previa.rrule)}` : ""}
+            </span>
+          )}
+        </div>
+      )}
+    </form>
+  );
+}
+
+function ListaDeTarefas({
+  tarefas,
+  hoje,
+  nomeLista,
+  vazio,
+}: {
+  tarefas: Tarefa[];
+  hoje: string;
+  nomeLista: Map<string, string> | null;
+  vazio: string;
+}) {
+  if (!tarefas.length)
+    return <p className="mt-10 text-center text-sm text-muted-foreground">{vazio}</p>;
+  return (
+    <ul className="mt-4 divide-y rounded-lg border bg-card">
+      {tarefas.map((t) => (
+        <LinhaTarefa key={t.id} t={t} hoje={hoje} nomeLista={nomeLista?.get(t.listaId) ?? null} />
+      ))}
+    </ul>
+  );
+}
+
+function LinhaTarefa({
+  t,
+  hoje,
+  nomeLista,
+}: {
+  t: Tarefa;
+  hoje: string;
+  nomeLista: string | null;
+}) {
+  const naLixeira = !!t.excluidoEm;
+  const aberta = t.status === "aberta" && !naLixeira;
+  const cor = COR_PRIORIDADE[t.prioridade];
+  const vencida = atrasada(t, hoje);
+  return (
+    <li
+      className="flex items-start gap-3 px-3 py-2.5"
+      style={cor ? { boxShadow: `inset 3px 0 0 ${cor}` } : undefined}
+    >
+      {aberta ? (
+        <button
+          role="checkbox"
+          aria-checked={false}
+          aria-label={`Concluir "${t.titulo}"`}
+          onClick={() =>
+            salvar(
+              concluirTarefa(t.id),
+              t.rrule ? "Concluída; próxima ocorrência agendada" : undefined,
+            )
+          }
+          className="mt-0.5 h-5 w-5 shrink-0 rounded border-2 transition hover:bg-muted"
+          style={cor ? { borderColor: cor } : undefined}
+        />
+      ) : (
+        <span
+          className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center text-muted-foreground"
+          aria-hidden
         >
-          <Input name="nome" placeholder="Ex.: Comprar um notebook" required />
-          <div className="grid grid-cols-2 gap-2">
-            <Input
-              name="alvo"
-              type="number"
-              min="1"
-              step="0.01"
-              placeholder="Valor alvo"
-              required
-            />
-            <Input name="atual" type="number" min="0" step="0.01" placeholder="Já guardado" />
-          </div>
-          <Input name="prazo" type="date" />
-          <Button type="submit" className="w-full">
-            Criar meta
+          {t.status === "nao_vou_fazer" ? (
+            <Ban className="h-4 w-4" />
+          ) : (
+            <CheckCircle2 className="h-4 w-4" />
+          )}
+        </span>
+      )}
+      <div className="min-w-0 flex-1">
+        <p className={`break-words ${aberta ? "" : "text-muted-foreground line-through"}`}>
+          {t.titulo}
+        </p>
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+          {t.data && (
+            <span
+              className={`flex items-center gap-1 ${vencida ? "font-medium text-destructive" : ""}`}
+            >
+              <CalendarClock className="h-3.5 w-3.5" aria-hidden />
+              {rotuloData(t.data, hoje)}
+              {t.hora ? ` ${t.hora}` : ""}
+              {vencida ? " (atrasada)" : ""}
+            </span>
+          )}
+          {t.rrule && (
+            <span className="flex items-center gap-1">
+              <Repeat className="h-3.5 w-3.5" aria-hidden />
+              {descreverRegra(t.rrule)}
+            </span>
+          )}
+          {t.prioridade > 0 && (
+            <span style={{ color: cor ?? undefined }}>
+              Prioridade {NOMES_PRIORIDADE[t.prioridade].toLowerCase()}
+            </span>
+          )}
+          {t.tags.map((tag) => (
+            <span key={tag}>#{tag}</span>
+          ))}
+          {nomeLista && <span>~{nomeLista}</span>}
+        </div>
+      </div>
+      <div className="flex shrink-0 gap-1">
+        {aberta && (
+          <>
+            <Button
+              size="icon"
+              variant="ghost"
+              title="Não vou fazer"
+              aria-label={`Não vou fazer "${t.titulo}"`}
+              onClick={() => salvar(concluirTarefa(t.id, "nao_vou_fazer"))}
+            >
+              <Ban className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              title="Mandar para a lixeira"
+              aria-label={`Mandar "${t.titulo}" para a lixeira`}
+              onClick={() => salvar(moverParaLixeira(t.id), "Movida para a lixeira")}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </>
+        )}
+        {!aberta && !naLixeira && (
+          <Button
+            size="icon"
+            variant="ghost"
+            title="Reabrir"
+            aria-label={`Reabrir "${t.titulo}"`}
+            onClick={() => salvar(reabrirTarefa(t.id))}
+          >
+            <RotateCcw className="h-4 w-4" />
           </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
+        )}
+        {naLixeira && (
+          <Button
+            size="icon"
+            variant="ghost"
+            title="Restaurar"
+            aria-label={`Restaurar "${t.titulo}"`}
+            onClick={() => salvar(restaurarTarefa(t.id), "Tarefa restaurada")}
+          >
+            <Undo2 className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+    </li>
   );
 }

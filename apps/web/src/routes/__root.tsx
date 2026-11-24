@@ -116,6 +116,25 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function MenuPrincipal() {
+  const link =
+    "rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground";
+  const ativo = { className: `${link} bg-muted text-foreground` };
+  return (
+    <header className="border-b bg-card">
+      <nav aria-label="Principal" className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2">
+        <span className="mr-2 font-display font-bold">TickTick</span>
+        <Link to="/" className={link} activeProps={ativo} activeOptions={{ exact: true }}>
+          Tarefas
+        </Link>
+        <Link to="/financas" className={link} activeProps={ativo}>
+          Finanças
+        </Link>
+      </nav>
+    </header>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
@@ -125,6 +144,7 @@ function RootComponent() {
       {/* ADR 0003: app SPA. As páginas só montam no navegador (dados no IndexedDB), então a casca
           pré-renderizada e a 1ª renderização do cliente ficam iguais e não há erro de hidratação. */}
       <ClientOnly fallback={null}>
+        <MenuPrincipal />
         <Outlet />
       </ClientOnly>
       <Toaster richColors position="top-center" />

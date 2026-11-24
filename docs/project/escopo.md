@@ -7,7 +7,7 @@ do objetivo em andamento e dos próximos.
 > dados do plano (id gerado no aparelho, datas de criação/alteração, exclusão lógica) para poder sincronizar
 > junto com as tarefas quando houver servidor.
 
-## Objetivo 1 — Guardar as finanças no navegador (em andamento)
+## Objetivo 1 — Guardar as finanças no navegador (concluído)
 
 **Por quê:** hoje tudo que se digita na tela de finanças some ao recarregar a página. É o primeiro passo do
 banco local (Dexie) que o plano prevê para o modo offline.
@@ -25,6 +25,32 @@ banco local (Dexie) que o plano prevê para o modo offline.
 6. **Dado** que estou sem internet, **quando** registro algo, **então** é gravado do mesmo jeito (o banco é local).
 7. Cada registro tem id UUID v7 gerado no aparelho e datas de criação e alteração.
 
-## Objetivo 2 — Tela de tarefas com quick-add (próximo)
-A definir com o humano antes de começar. Ponto de partida no plano: "Tela de lista em 3 colunas com quick-add",
-tabelas `lists`, `tasks`, `tags` e `checklist_items` no Dexie.
+## Objetivo 2 — Tela de tarefas com quick-add (concluído)
+
+**Por quê:** é o coração do MVP do plano ("capturar e organizar"). O parser já existe; falta a tela e o banco.
+
+**Dentro:** campo de quick-add que mostra o que foi reconhecido enquanto se digita; Inbox e listas (criadas pelo
+`~lista`); listas inteligentes Hoje, Amanhã, Próximos 7 dias, Tudo, Concluídas e Lixeira; concluir, reabrir,
+"não vou fazer", mandar para a lixeira e restaurar; tarefas recorrentes avançam para a próxima data ao concluir;
+navegação entre Tarefas e Finanças.
+
+**Fora (próximos objetivos):** editar a tarefa depois de criada, notas, subtarefas e checklist, pastas, lembretes e
+notificações, arrastar para reordenar, "editar só esta" ocorrência.
+
+### Critérios de aceite
+1. **Dado** que digito `pagar boleto amanhã 15h !alta #casa`, **então**, antes de salvar, vejo reconhecidos: amanhã,
+   15:00, prioridade alta e a tag casa, e o título "pagar boleto".
+2. **Quando** aperto Enter, **então** a tarefa aparece com título "pagar boleto", data de amanhã, 15:00, prioridade
+   alta e tag casa, e o campo fica vazio.
+3. **Dado** uma tarefa sem `~lista`, **então** ela vai para a Inbox; **dado** `~trabalho`, **então** vai para a lista
+   "trabalho", que é criada se não existir e aparece na barra lateral.
+4. **Hoje** mostra as tarefas abertas de hoje e as atrasadas; **Amanhã** as de amanhã; **Próximos 7 dias** de hoje até
+   hoje + 6, mais as atrasadas; **Tudo** todas as abertas; **Concluídas** as concluídas e "não vou fazer"; **Lixeira**
+   as apagadas. Ordem: atrasadas e mais cedo primeiro, sem data por último; no mesmo horário, maior prioridade primeiro.
+5. **Quando** concluo uma tarefa comum, **então** ela sai das listas abertas e aparece em Concluídas; **quando** a reabro,
+   **então** volta.
+6. **Dado** `academia toda segunda 7h` vencendo nesta segunda, **quando** concluo, **então** a tarefa passa para a próxima
+   segunda e uma cópia concluída da ocorrência vai para Concluídas.
+7. **Quando** mando para a lixeira, **então** some das outras listas e aparece na Lixeira; **quando** restauro, **então** volta.
+8. Tudo continua depois de recarregar a página e funciona sem internet.
+9. Há um menu para ir de Tarefas para Finanças e voltar; Tarefas é a página inicial.
