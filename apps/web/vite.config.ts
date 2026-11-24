@@ -18,4 +18,10 @@ export default defineConfig({
   // ADR 0003: saída estática (dist/client), servida pelo Caddy; sem servidor Node/Workers.
   // O service worker do PWA é gerado depois do build por scripts/gerar-sw.mjs (ADR 0004).
   nitro: false,
+  // ADR 0006: no `pnpm dev`, /api vai para a API Python local (em produção, o Caddy faz isso).
+  vite: {
+    server: {
+      proxy: { "/api": process.env["TICKTICK_API_URL"] ?? "http://127.0.0.1:8000" },
+    },
+  },
 });

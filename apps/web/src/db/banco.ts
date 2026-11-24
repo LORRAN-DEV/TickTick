@@ -10,6 +10,7 @@
  */
 import Dexie, { type EntityTable } from "dexie";
 import type { ItemChecklist, Lista, Meta, Mov, Tarefa } from "@ticktick/core";
+import { middlewareDaFila, type EntradaFila } from "./sync/fila";
 
 export type Config = { chave: string; valor: unknown };
 
@@ -20,6 +21,7 @@ export class TickTickDB extends Dexie {
   tarefas!: EntityTable<Tarefa, "id">;
   listas!: EntityTable<Lista, "id">;
   itensChecklist!: EntityTable<ItemChecklist, "id">;
+  fila!: EntityTable<EntradaFila, "seq">;
 
   constructor(nome = "ticktick") {
     super(nome);
@@ -36,6 +38,12 @@ export class TickTickDB extends Dexie {
       tarefas: "id, listaId, status, data, atualizadoEm, paiId",
       itensChecklist: "id, tarefaId, atualizadoEm",
     });
+    // Objetivo 8: fila de saída do sync (ADR 0006).
+    this.version(4).stores({
+      fila: "++seq, [tabela+registroId]",
+    });
+    // Toda gravação nas tabelas sincronizadas registra os campos alterados na `fila`.
+    this.use(middlewareDaFila);
   }
 }
 

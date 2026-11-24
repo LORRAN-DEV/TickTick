@@ -12,6 +12,8 @@ const { count, size, warnings } = await generateSW({
   globPatterns: ["**/*.{html,js,css,ico,png,svg,woff2,webmanifest}"],
   swDest: `${pasta}sw.js`,
   navigateFallback: "/_shell.html",
+  // A API (ex.: /api/docs aberto no navegador) nunca é respondida pela casca do app.
+  navigateFallbackDenylist: [/^\/api\//],
   // Arquivos com hash no nome não precisam de revisão: o nome já muda a cada versão.
   dontCacheBustURLsMatching: /^assets\//,
   cleanupOutdatedCaches: true,

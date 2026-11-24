@@ -178,3 +178,30 @@ lembretes e Web Push, API REST de integrações, `docker compose` + Caddy.
 8. Exclusão é lógica: `excluidoEm` é um campo como os outros e o registro continua vindo no pull.
 9. Um usuário nunca vê nem altera registros de outro.
 10. `uv run pytest` roda os testes contra PostgreSQL; o CI roda a API num job próprio com Postgres.
+
+## Objetivo 8 — App web sincronizando com a API (concluído)
+
+**Por quê:** a API existe (objetivo 7), mas o app ainda não a usa. Com isto, os mesmos dados aparecem em todos os
+aparelhos, continuando a funcionar offline.
+
+**Dentro:** página "Conta" com login e logout; fila de saída no banco local registrando cada campo alterado;
+sincronização automática (ao abrir, ao voltar a conexão, logo depois de cada mudança e a cada minuto) e botão
+"Sincronizar agora"; indicador de estado no menu. O app continua funcionando sem conta.
+
+**Fora:** avisos em tempo real (SSE), lembretes, resolver conflito com escolha do usuário (vale a regra do ADR 0005).
+
+### Critérios de aceite
+1. Sem login, o app funciona como antes; o menu mostra "Conta" sem indicador de sincronização.
+2. **Na** página Conta, **quando** entro com e-mail e senha certos, **então** vejo "Sincronizado" e meu e-mail;
+   com dados errados, vejo "E-mail ou senha incorretos". "Sair" encerra a sessão e para de sincronizar.
+3. **Dado** que entrei no aparelho A, **quando** crio ou altero tarefas, listas, checklist, movimentações ou metas,
+   **então**, em poucos segundos, elas chegam ao servidor sem eu fazer nada.
+4. **Dado** o aparelho B logado na mesma conta, **quando** ele sincroniza, **então** mostra o que foi feito no A
+   (e vice-versa), inclusive exclusões (lixeira).
+5. **Conflito:** título alterado no A e data alterada no B, offline, viram os dois quando ambos sincronizam;
+   no mesmo campo, vale a alteração mais recente.
+6. **Offline:** o que faço sem internet fica na fila (o menu mostra "Offline" e quantas mudanças estão pendentes)
+   e sobe sozinho quando a conexão volta.
+7. **Primeiro login no aparelho:** o que já existia nele (criado antes de entrar) é enviado; os dados de exemplo
+   nunca alterados não são enviados e saem deste aparelho.
+8. Se a sessão expira, o app avisa "Entre de novo para sincronizar" e não perde as mudanças da fila.

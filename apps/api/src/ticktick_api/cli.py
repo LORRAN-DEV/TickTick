@@ -5,7 +5,7 @@ import getpass
 import sys
 from pathlib import Path
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from .config import config_padrao
@@ -41,6 +41,23 @@ def criar_usuario(email: str, senha: str, url: str | None = None) -> None:
         db.commit()
 
 
+def preparar_teste(email: str, senha: str, url: str | None = None) -> None:
+    """Zera um banco de TESTE (nome terminando em 'teste' ou 'e2e'), migra e cria o usuário."""
+    url = url or config_padrao().database_url
+    nome = url.rsplit("/", 1)[-1].split("?")[0]
+    if not (nome.endswith("teste") or nome.endswith("e2e")):
+        raise SystemExit(
+            f"Recusado: '{nome}' não parece um banco de teste (precisa terminar em 'teste' ou 'e2e')"
+        )
+    engine = criar_engine(url)
+    with engine.begin() as c:
+        c.execute(text("DROP SCHEMA public CASCADE"))
+        c.execute(text("CREATE SCHEMA public"))
+    engine.dispose()
+    migrar(url)
+    criar_usuario(email, senha, url)
+
+
 def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser(prog="ticktick-api", description="API do TickTick")
     sub = p.add_subparsers(dest="comando", required=True)
@@ -48,6 +65,9 @@ def main(argv: list[str] | None = None) -> None:
     c = sub.add_parser("criar-usuario", help="cria o usuário (a senha é pedida no terminal)")
     c.add_argument("email")
     c.add_argument("--senha-stdin", action="store_true", help="lê a senha da entrada padrão (para scripts)")
+    t = sub.add_parser("preparar-teste", help="zera um banco de teste e cria o usuário (testes e2e)")
+    t.add_argument("email")
+    t.add_argument("--senha-stdin", action="store_true", required=True)
     s = sub.add_parser("servir", help="sobe a API com uvicorn")
     s.add_argument("--host", default="127.0.0.1")
     s.add_argument("--porta", type=int, default=8000)
@@ -65,6 +85,9 @@ def main(argv: list[str] | None = None) -> None:
                 raise SystemExit("As senhas não conferem")
         criar_usuario(a.email, senha)
         print(f"Usuário {a.email.strip().lower()} criado.")
+    elif a.comando == "preparar-teste":
+        preparar_teste(a.email, sys.stdin.readline().rstrip("\n"))
+        print(f"Banco de teste pronto, usuário {a.email.strip().lower()}.")
     elif a.comando == "servir":
         import uvicorn
 

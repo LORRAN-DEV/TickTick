@@ -24,6 +24,9 @@ uv run pytest            # precisa de um Postgres; o banco de teste é APAGADO a
 uv run ruff check . && uv run ruff format --check .
 ```
 
+O comando `uv run ticktick-api preparar-teste EMAIL --senha-stdin` zera um banco de teste (nome terminando em
+`teste` ou `e2e`) e cria o usuário; é o que o `pnpm e2e` usa para os testes de sync.
+
 Os testes usam `TICKTICK_TEST_DATABASE_URL` (padrão: banco `ticktick_teste` no localhost, usuário/senha
 `ticktick`). Por segurança, o nome do banco precisa terminar em `teste`. Da raiz do monorepo: `pnpm test:api`.
 

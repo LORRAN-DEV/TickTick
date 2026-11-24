@@ -74,7 +74,8 @@ export async function limparTudo(banco: TickTickDB = db): Promise<void> {
 
 /**
  * Na primeira abertura grava os dados de exemplo. Só acontece uma vez por aparelho:
- * depois de "Começar do zero", os exemplos não voltam.
+ * depois de "Começar do zero", os exemplos não voltam. Num aparelho com conta de sync,
+ * nunca: os exemplos subiriam para a conta (ADR 0006).
  */
 export async function semearSeNecessario(
   banco: TickTickDB = db,
@@ -82,11 +83,21 @@ export async function semearSeNecessario(
 ): Promise<boolean> {
   return banco.transaction("rw", banco.movs, banco.metas, banco.config, async () => {
     if (await banco.config.get("exemplosGravados")) return false;
+    if (await banco.config.get("sync.conta")) {
+      await banco.config.put({ chave: "exemplosGravados", valor: "não: aparelho com conta" });
+      return false;
+    }
     const { movs, metas } = gerarExemplos(hoje);
     const agora = agoraISO();
     // Um instante por registro: o id v7 começa pelo tempo, então a ordem de criação se mantém.
     const base = Date.now();
-    const meta = (i: number) => ({ id: uuidv7(base + i), criadoEm: agora, atualizadoEm: agora });
+    // `exemplo: true`: no primeiro login, exemplos nunca alterados não sobem (ADR 0006).
+    const meta = (i: number) => ({
+      id: uuidv7(base + i),
+      criadoEm: agora,
+      atualizadoEm: agora,
+      exemplo: true,
+    });
     await banco.movs.bulkAdd(movs.map((m, i) => ({ ...m, ...meta(i) })));
     await banco.metas.bulkAdd(metas.map((m, i) => ({ ...m, ...meta(movs.length + i) })));
     await banco.config.put({ chave: "exemplosGravados", valor: agora });

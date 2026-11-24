@@ -28,6 +28,8 @@ export interface Mov {
   atualizadoEm: string;
   /** Exclusão lógica: preenchido quando a movimentação foi apagada. */
   excluidoEm?: string | undefined;
+  /** Dado de exemplo criado na primeira abertura (não sobe no sync se nunca for alterado). */
+  exemplo?: boolean | undefined;
 }
 
 export interface Conta {
@@ -56,6 +58,8 @@ export interface Meta {
   atualizadoEm?: string | undefined;
   /** Exclusão lógica: preenchido quando a meta foi apagada. */
   excluidoEm?: string | undefined;
+  /** Dado de exemplo criado na primeira abertura (não sobe no sync se nunca for alterado). */
+  exemplo?: boolean | undefined;
 }
 
 export const CATEGORIAS_INICIAIS: Array<[string, CatTipo]> = [

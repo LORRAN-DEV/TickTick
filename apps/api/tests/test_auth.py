@@ -104,3 +104,18 @@ def test_entrar_de_novo_funciona_depois_do_logout(logado):
     logado.post("/api/auth/logout")
     entrar(logado)
     assert logado.get("/api/auth/eu").status_code == 200
+
+
+def test_preparar_teste_recusa_banco_que_nao_e_de_teste():
+    from ticktick_api.cli import preparar_teste
+
+    with pytest.raises(SystemExit, match="não parece um banco de teste"):
+        preparar_teste("x@exemplo.com", SENHA, "postgresql+psycopg://u:s@127.0.0.1:5432/ticktick")
+
+
+def test_preparar_teste_zera_e_cria_o_usuario(engine, usuario):
+    from ticktick_api.cli import preparar_teste
+
+    preparar_teste("e2e@exemplo.com", SENHA, URL)
+    with engine.connect() as c:
+        assert c.execute(text("SELECT email FROM usuarios")).scalars().all() == ["e2e@exemplo.com"]

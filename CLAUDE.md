@@ -7,7 +7,7 @@ App pessoal de tarefas (inspirado no TickTick) com controle financeiro. Monorepo
 | Pasta | O que é | Testes |
 |---|---|---|
 | `packages/core/` | `@ticktick/core`: TypeScript puro, sem dependências. Parser de quick-add (`src/parser/`), recorrência (`src/recurrence/`), tarefas, listas inteligentes, edição, subtarefas e checklist (`src/tasks/`), ids UUID v7 monotônicos (`src/ids.ts`) e cálculos financeiros (`src/finance/`) | `node:test` (`*.test.ts` ao lado do código) |
-| `apps/web/` | `@ticktick/web`: React 19 + TanStack Start em modo SPA (build estático em `dist/client/`) + Tailwind 4 + shadcn/ui. Importa a lógica de `@ticktick/core`. Rotas: `/` tarefas, `/financas`. Banco local em `src/db/` (Dexie/IndexedDB, esquema em `banco.ts`) | Vitest + Testing Library + fake-indexeddb (`src/test/`) |
+| `apps/web/` | `@ticktick/web`: React 19 + TanStack Start em modo SPA (build estático em `dist/client/`) + Tailwind 4 + shadcn/ui. Importa a lógica de `@ticktick/core`. Rotas: `/` tarefas, `/financas`. Banco local em `src/db/` (Dexie/IndexedDB, esquema em `banco.ts`); sync em `src/db/sync/` (ADR 0006) | Vitest + Testing Library + fake-indexeddb (`src/test/`) |
 | `apps/api/` | `ticktick-api`: Python 3.12+ com uv, FastAPI + SQLAlchemy 2 + Alembic + PostgreSQL 16. Login (`auth.py`) e sync (`sync.py`) conforme ADR 0002 e 0005; comandos `migrar`, `criar-usuario`, `servir`. Ver `apps/api/README.md` | `pnpm test:api` (pytest; precisa de Postgres, banco `*teste` é apagado) |
 | `tests/` | `@ticktick/e2e`: Playwright contra o build de produção, um arquivo por objetivo, critério no nome do teste. Ajudantes em `e2e/ajuda.ts` (relógio fixo em 24/11/2026 10:00 SP) | `pnpm e2e` |
 | `docs/adr/` | Decisões registradas | — |
@@ -24,6 +24,7 @@ pnpm lint        # apps/web
 pnpm dev         # sobe o app web
 pnpm build       # gera apps/web/dist/client (estático; fallback de rotas para _shell.html) + sw.js do PWA
 pnpm e2e         # build + servidor estático + Playwright (≈1 min); CI roda tudo isso a cada push
+                 # com TICKTICK_E2E_DATABASE_URL=…/ticktick_e2e também sobe a API e roda os testes de sync
 ```
 
 Objetivo novo com tela? Os critérios de aceite viram testes em `tests/e2e/<objetivo>.spec.ts`, e a suíte
@@ -37,6 +38,9 @@ No `pnpm dev` não há service worker; para testar o PWA, rode `pnpm build` e si
 
 - Datas são `PlainDate` (`"YYYY-MM-DD"`, calendário local). Nunca use `toISOString()` para obter "hoje": use `hojeLocal()` de `@ticktick/core`.
 - Regra de negócio mora em `packages/core`, com teste. O app web só apresenta.
+- Sync (ADR 0006): toda gravação nas tabelas sincronizadas entra sozinha na fila de saída (middleware). Nunca apague
+  registro de verdade (`delete`) numa tabela sincronizada: use `excluidoEm`. Tabela nova para sincronizar? Acrescente
+  em `TABELAS_SINCRONIZADAS` (`src/db/sync/fila.ts`) e em `TABELAS` (`apps/api/src/ticktick_api/sync.py`).
 - A tela nunca grava direto no IndexedDB: usa as funções de `apps/web/src/db/`. Todo registro tem id `uuidv7()`
   gerado no aparelho, `criadoEm`/`atualizadoEm` e exclusão lógica (`excluidoEm`), para o sync futuro.
 - Textos de interface, nomes de domínio, commits e docs em português.

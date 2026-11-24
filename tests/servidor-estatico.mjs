@@ -4,7 +4,7 @@
 // A pasta servida é apps/web/dist/client, ou a escrita em tests/.tmp/raiz.txt — o teste de
 // atualização do PWA usa isso para trocar de versão sem reiniciar o servidor.
 import { createReadStream, existsSync, readFileSync, statSync } from "node:fs";
-import { createServer } from "node:http";
+import { createServer, request } from "node:http";
 import { extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -27,7 +27,36 @@ const TIPOS = {
 
 const raiz = () => (existsSync(arquivoRaiz) ? readFileSync(arquivoRaiz, "utf8").trim() : padrao);
 
+// /api vai para a API Python quando API_ALVO estiver definida (como o Caddy faz em produção).
+const apiAlvo = process.env.API_ALVO ? new URL(process.env.API_ALVO) : null;
+
+function repassarParaApi(req, res) {
+  const pedido = request(
+    {
+      hostname: apiAlvo.hostname,
+      port: apiAlvo.port,
+      path: req.url,
+      method: req.method,
+      headers: { ...req.headers, "x-forwarded-for": req.socket.remoteAddress ?? "" },
+    },
+    (resposta) => {
+      res.writeHead(resposta.statusCode ?? 502, resposta.headers);
+      resposta.pipe(res);
+    },
+  );
+  pedido.on("error", () => {
+    res.writeHead(502, { "content-type": "application/json" });
+    res.end(JSON.stringify({ detail: "API fora do ar" }));
+  });
+  req.pipe(pedido);
+}
+
 createServer((req, res) => {
+  if (req.url?.startsWith("/api/")) {
+    if (apiAlvo) return repassarParaApi(req, res);
+    res.writeHead(502, { "content-type": "application/json" });
+    return res.end(JSON.stringify({ detail: "API não configurada" }));
+  }
   const base = raiz();
   let caminho = join(base, decodeURIComponent((req.url ?? "/").split("?")[0]));
   if (!caminho.startsWith(base) || !existsSync(caminho) || statSync(caminho).isDirectory()) {

@@ -1,6 +1,6 @@
 # Status do projeto
 
-_Atualizado em 24/11/2026, depois do objetivo 7._
+_Atualizado em 24/11/2026, depois do objetivo 8._
 
 ## Pronto
 - **Parser de quick-add** em português: datas, horas, recorrência, `#tag`, `~lista`, `!prioridade`
@@ -28,13 +28,16 @@ _Atualizado em 24/11/2026, depois do objetivo 7._
 - **Objetivo 7: API em Python** (`apps/api`, FastAPI + PostgreSQL): usuário criado por comando, login com
   cookie de sessão e limite de tentativas, `POST /api/sync/push` e `GET /api/sync/pull` com conflito resolvido
   por campo (vence a edição mais recente). 32 testes com pytest. `docs/qa/objetivo-7.md`.
+- **Objetivo 8: app sincronizando**: página Conta (entrar/sair), fila de saída automática no banco local, sync ao
+  abrir, ao voltar a conexão, logo depois de cada mudança e a cada minuto; indicador no menu ("Sincronizado",
+  "Offline · N pendentes", "Entre de novo"). Verificado com dois aparelhos e a API de verdade. `docs/qa/objetivo-8.md`.
 - **Time de agentes** configurado (`CLAUDE.md`, `.claude/agents/`, `.claude/skills/`).
 
 ## Falta
 - Pastas, notas em Markdown (hoje são texto puro) e arrastar para reordenar.
 - Lembretes e notificações.
 - Contas e categorias editáveis (a tela usa listas fixas), transferências na interface, importar/exportar CSV.
-- O app web ainda não usa a API: falta a tela de login e o sync (fila de saída no Dexie).
+- Aviso instantâneo entre aparelhos (SSE): hoje o outro aparelho vê a mudança em até 60 s.
 - Implantação: `docker compose` com API, Postgres e Caddy (não verificável neste ambiente, sem Docker).
 
 ## Decisões tomadas
@@ -43,12 +46,13 @@ _Atualizado em 24/11/2026, depois do objetivo 7._
 - App web como **SPA estático** (modo SPA do TanStack Start, sem servidor): `docs/adr/0003-app-web-como-spa.md`.
 - **PWA** com service worker do Workbox gerado depois do build: `docs/adr/0004-pwa-com-workbox-depois-do-build.md`.
 - **Servidor de sync** com documentos JSONB e relógio por campo: `docs/adr/0005-servidor-de-sync.md`.
+- **Cliente de sync** com fila de saída por middleware do Dexie: `docs/adr/0006-cliente-de-sync.md`.
 
 ## Decisões pendentes do humano
 1. Itens em aberto do plano: onde hospedar (VPS ou máquina em casa), iPhone ou Android, importar de outro app.
 
 ## Próximos objetivos sugeridos (em ordem)
-1. Sincronização no app web: tela de login, fila de saída no Dexie com o horário de cada campo alterado,
-   push e pull automáticos quando há rede.
-2. `docker compose` (API + Postgres + Caddy servindo o app e repassando `/api`) e backup diário.
-3. Lembretes: worker no servidor e Web Push.
+1. `docker compose` (API + Postgres + Caddy servindo o app e repassando `/api`) e backup diário, para usar de
+   verdade em mais de um aparelho.
+2. Lembretes: worker no servidor e Web Push.
+3. Aviso instantâneo entre aparelhos (SSE).

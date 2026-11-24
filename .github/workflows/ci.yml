@@ -40,9 +40,25 @@ jobs:
   verificar:
     name: Testes, tipos, lint, build e e2e
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
+    services:
+      postgres: # para os testes de sync (objetivo 8) com a API de verdade
+        image: postgres:16
+        env:
+          POSTGRES_USER: ticktick
+          POSTGRES_PASSWORD: ticktick
+          POSTGRES_DB: ticktick_e2e
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ticktick" --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Dependências da API (para o e2e de sync)
+        run: uv sync --locked
+        working-directory: apps/api
 
       - uses: pnpm/action-setup@v4 # versão do pnpm vem de "packageManager" no package.json
 
@@ -68,8 +84,10 @@ jobs:
       - name: Navegador do Playwright
         run: pnpm --filter @ticktick/e2e exec playwright install --with-deps chromium
 
-      - name: Testes de ponta a ponta
+      - name: Testes de ponta a ponta (com a API e Postgres)
         run: pnpm e2e
+        env:
+          TICKTICK_E2E_DATABASE_URL: postgresql+psycopg://ticktick:ticktick@127.0.0.1:5432/ticktick_e2e
 
       - name: Guardar resultados do e2e se falhar
         if: failure()

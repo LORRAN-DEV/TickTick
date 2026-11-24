@@ -13,6 +13,8 @@ import { useEffect, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
 import { AvisosPWA, BotaoInstalar } from "@/components/AvisosPWA";
+import { IndicadorSync } from "@/components/IndicadorSync";
+import { ProvedorSync } from "@/db/sync/ProvedorSync";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -138,7 +140,10 @@ function MenuPrincipal() {
         <Link to="/financas" className={link} activeProps={ativo}>
           Finanças
         </Link>
-        <BotaoInstalar />
+        <div className="ml-auto flex items-center gap-2">
+          <BotaoInstalar />
+          <IndicadorSync className={link} />
+        </div>
       </nav>
     </header>
   );
@@ -153,9 +158,11 @@ function RootComponent() {
       {/* ADR 0003: app SPA. As páginas só montam no navegador (dados no IndexedDB), então a casca
           pré-renderizada e a 1ª renderização do cliente ficam iguais e não há erro de hidratação. */}
       <ClientOnly fallback={null}>
-        <MenuPrincipal />
-        <Outlet />
-        <AvisosPWA />
+        <ProvedorSync>
+          <MenuPrincipal />
+          <Outlet />
+          <AvisosPWA />
+        </ProvedorSync>
       </ClientOnly>
       <Toaster richColors position="top-center" />
     </QueryClientProvider>
