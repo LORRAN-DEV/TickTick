@@ -35,7 +35,8 @@ Node 22.18+ (roda `.ts` direto). Num container sem IPv6, suba com `pnpm --filter
 - O app web não tem servidor: nada de loaders/server functions que dependam de SSR. As páginas montam só no
   navegador (`<ClientOnly>` em `__root.tsx`, ADR 0003).
 - `apps/web/src/components/ui/` é shadcn gerado: evite editar à mão; `src/routeTree.gen.ts` é gerado pelo router.
-- Nada de `git push` sem o humano pedir.
+- Push liberado, sem pedir, para a branch de trabalho da sessão (a que o ambiente indica, ex.: `claude/...`), depois de
+  testes e lint passando. Para `main` ou qualquer outra branch, só com o humano pedindo. Nunca `push --force`.
 
 # Time de agentes: protocolo comum
 
