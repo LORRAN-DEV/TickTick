@@ -41,6 +41,7 @@ import {
   TituloVazioError,
 } from "@/db/tarefas";
 import { useTarefas } from "@/db/useTarefas";
+import { DetalheTarefa } from "@/components/tarefas/DetalheTarefa";
 import { COR_PRIORIDADE, NOMES_PRIORIDADE, NOMES_TRECHO, rotuloData } from "@/lib/rotulos";
 
 export const Route = createFileRoute("/")({
@@ -79,6 +80,8 @@ function salvar(p: Promise<unknown>, sucesso?: string) {
 function PaginaTarefas() {
   const { tarefas, listas } = useTarefas();
   const [visao, setVisao] = useState<Visao>({ tipo: "inteligente", id: "hoje" });
+  const [detalheId, setDetalheId] = useState<string | null>(null);
+  const detalhe = detalheId ? (tarefas.find((t) => t.id === detalheId) ?? null) : null;
   const hoje = hojeLocal();
 
   const visiveis = useMemo(
@@ -120,6 +123,7 @@ function PaginaTarefas() {
           tarefas={visiveis}
           hoje={hoje}
           nomeLista={visao.tipo === "inteligente" ? nomeLista : null}
+          onAbrir={setDetalheId}
           vazio={
             visao.tipo === "inteligente" && visao.id === "lixeira"
               ? "A lixeira está vazia."
@@ -129,6 +133,7 @@ function PaginaTarefas() {
           }
         />
       </main>
+      <DetalheTarefa tarefa={detalhe} listas={listas} onFechar={() => setDetalheId(null)} />
     </div>
   );
 }
@@ -268,18 +273,26 @@ function ListaDeTarefas({
   hoje,
   nomeLista,
   vazio,
+  onAbrir,
 }: {
   tarefas: Tarefa[];
   hoje: string;
   nomeLista: Map<string, string> | null;
   vazio: string;
+  onAbrir: (id: string) => void;
 }) {
   if (!tarefas.length)
     return <p className="mt-10 text-center text-sm text-muted-foreground">{vazio}</p>;
   return (
     <ul className="mt-4 divide-y rounded-lg border bg-card">
       {tarefas.map((t) => (
-        <LinhaTarefa key={t.id} t={t} hoje={hoje} nomeLista={nomeLista?.get(t.listaId) ?? null} />
+        <LinhaTarefa
+          key={t.id}
+          t={t}
+          hoje={hoje}
+          nomeLista={nomeLista?.get(t.listaId) ?? null}
+          onAbrir={() => onAbrir(t.id)}
+        />
       ))}
     </ul>
   );
@@ -289,10 +302,12 @@ function LinhaTarefa({
   t,
   hoje,
   nomeLista,
+  onAbrir,
 }: {
   t: Tarefa;
   hoje: string;
   nomeLista: string | null;
+  onAbrir: () => void;
 }) {
   const naLixeira = !!t.excluidoEm;
   const aberta = t.status === "aberta" && !naLixeira;
@@ -330,9 +345,14 @@ function LinhaTarefa({
         </span>
       )}
       <div className="min-w-0 flex-1">
-        <p className={`break-words ${aberta ? "" : "text-muted-foreground line-through"}`}>
-          {t.titulo}
-        </p>
+        <button
+          onClick={onAbrir}
+          aria-label={`Abrir detalhes de "${t.titulo}"`}
+          className={`block w-full break-words text-left hover:underline ${aberta ? "" : "text-muted-foreground line-through"}`}
+        >
+          <span data-titulo>{t.titulo}</span>
+        </button>
+        {t.notas && <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{t.notas}</p>}
         <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
           {t.data && (
             <span

@@ -54,3 +54,30 @@ notificações, arrastar para reordenar, "editar só esta" ocorrência.
 7. **Quando** mando para a lixeira, **então** some das outras listas e aparece na Lixeira; **quando** restauro, **então** volta.
 8. Tudo continua depois de recarregar a página e funciona sem internet.
 9. Há um menu para ir de Tarefas para Finanças e voltar; Tarefas é a página inicial.
+
+## Objetivo 3 — Detalhe da tarefa: editar depois de criada (concluído)
+
+**Por quê:** hoje, errou no quick-add, só apagando e criando de novo. O plano prevê título, notas, prioridade,
+tags, data/hora e repetição na tarefa.
+
+**Dentro:** painel de detalhe ao clicar numa tarefa, com título, data, hora, prioridade, tags, lista, repetição e
+notas; salva sozinho (como no TickTick), sem botão "Salvar"; concluir e mandar para a lixeira dali.
+
+**Fora:** renderizar o Markdown das notas (por enquanto texto puro, com quebras de linha), subtarefas, checklist,
+anexos, lembretes, repetição personalizada além das opções prontas.
+
+### Critérios de aceite
+1. **Quando** clico no título de uma tarefa, **então** abre um painel com todos os campos preenchidos; Esc ou "Fechar" fecha.
+2. **Quando** mudo título, data, hora, prioridade, lista ou notas, **então** a mudança aparece na lista na hora e
+   continua depois de recarregar.
+3. **Dado** o título apagado, **quando** saio do campo, **então** o título anterior volta e aparece um aviso.
+4. **Tags:** digito `casa, #Mercado urgente` e saio do campo, **então** a tarefa fica com as tags casa, mercado e
+   urgente (minúsculas, sem `#`, sem repetir), igual ao quick-add.
+5. **Hora** só pode ser escolhida com data; **quando** tiro a data, **então** a hora e a repetição saem junto.
+6. **Repetição:** opções Não repete, Todo dia, Toda semana (no dia da semana da data), Dias úteis, Todo mês (no dia
+   da data) e Todo ano. **Dada** uma tarefa sem data, **quando** escolho uma repetição, **então** a data vira hoje.
+   Regras criadas pelo quick-add que não são uma dessas opções (ex.: "toda seg, qua, sex") aparecem com o nome delas
+   e continuam valendo até eu escolher outra.
+7. **Quando** mudo a data de uma tarefa "toda semana" ou "todo mês", **então** a regra acompanha o novo dia.
+8. **Quando** concluo ou mando para a lixeira pelo painel, **então** o painel fecha e a tarefa sai da lista.
+9. Cada mudança atualiza `atualizadoEm` (para o sync futuro).

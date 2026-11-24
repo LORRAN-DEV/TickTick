@@ -2,15 +2,20 @@
 import {
   concluir,
   dadosDoQuickAdd,
+  editarTarefa,
   hojeLocal,
   INBOX_ID,
   parseQuickAdd,
   uuidv7,
+  TituloVazioError,
   type Lista,
+  type MudancasTarefa,
   type StatusTarefa,
   type Tarefa,
 } from "@ticktick/core";
 import { agoraISO, ativo, db, type TickTickDB } from "./banco";
+
+export { TituloVazioError };
 
 /** Cria a Inbox se ainda não existir (id fixo, igual em todos os aparelhos). */
 export async function garantirInbox(banco: TickTickDB = db): Promise<void> {
@@ -55,12 +60,6 @@ async function listaPorNome(nome: string, banco: TickTickDB): Promise<string> {
     atualizadoEm: agora,
   });
   return id;
-}
-
-export class TituloVazioError extends Error {
-  constructor() {
-    super("A tarefa precisa de um título");
-  }
 }
 
 /**
@@ -122,4 +121,23 @@ export async function moverParaLixeira(id: string, banco: TickTickDB = db): Prom
 
 export async function restaurarTarefa(id: string, banco: TickTickDB = db): Promise<void> {
   await banco.tarefas.update(id, { excluidoEm: undefined, atualizadoEm: agoraISO() });
+}
+
+/**
+ * Edita uma tarefa (regras em `editarTarefa` do core). Lança TituloVazioError/HoraInvalidaError
+ * sem gravar nada. Devolve a tarefa como ficou.
+ */
+export async function atualizarTarefa(
+  id: string,
+  mudancas: MudancasTarefa,
+  banco: TickTickDB = db,
+  agora: Date = new Date(),
+): Promise<Tarefa> {
+  return banco.transaction("rw", banco.tarefas, async () => {
+    const t = await banco.tarefas.get(id);
+    if (!t) throw new Error(`Tarefa não encontrada: ${id}`);
+    const nova = editarTarefa(t, mudancas, agora.toISOString(), hojeLocal(agora));
+    await banco.tarefas.put(nova);
+    return nova;
+  });
 }

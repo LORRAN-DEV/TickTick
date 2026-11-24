@@ -2,6 +2,7 @@ export * from "./parser/dates.ts";
 export * from "./parser/quick-add.ts";
 export * from "./recurrence/proxima.ts";
 export * from "./tasks/tarefas.ts";
+export * from "./tasks/edicao.ts";
 export * from "./finance/finance.ts";
 export * from "./finance/format.ts";
 export * from "./ids.ts";

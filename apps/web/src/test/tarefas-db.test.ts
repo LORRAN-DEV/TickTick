@@ -12,6 +12,7 @@ import {
   reabrirTarefa,
   restaurarTarefa,
   TituloVazioError,
+  atualizarTarefa,
 } from "@/db/tarefas";
 
 // Terça, 24/11/2026, 10:00 no horário local do teste.
@@ -121,6 +122,30 @@ describe("tarefas no banco local", () => {
     ts = await listarTarefas(banco);
     expect(filtrarInteligente(ts, "lixeira", HOJE)).toEqual([]);
     expect(ts[0]!.excluidoEm).toBeUndefined();
+  });
+
+  it("editar persiste, atualiza atualizadoEm e recusa título vazio sem gravar", async () => {
+    const t = await criar("pagar boleto amanhã 15h");
+    const depois = new Date(2026, 10, 24, 11, 0);
+    await atualizarTarefa(
+      t.id,
+      { titulo: "pagar conta de luz", prioridade: 2, tags: ["casa"] },
+      banco,
+      depois,
+    );
+    reabrir();
+    const salva = (await listarTarefas(banco))[0]!;
+    expect(salva).toMatchObject({
+      titulo: "pagar conta de luz",
+      prioridade: 2,
+      tags: ["casa"],
+      hora: "15:00",
+    });
+    expect(salva.atualizadoEm).toBe(depois.toISOString());
+    await expect(atualizarTarefa(t.id, { titulo: " " }, banco)).rejects.toBeInstanceOf(
+      TituloVazioError,
+    );
+    expect((await listarTarefas(banco))[0]!.titulo).toBe("pagar conta de luz");
   });
 
   it("atualização do esquema v1 → v2 mantém as finanças de quem já usava o app", async () => {

@@ -7,8 +7,8 @@ O plano completo (escopo, arquitetura, modelo de dados, roadmap) está em `docs/
 
 | Pacote | O que tem | Status |
 | --- | --- | --- |
-| `packages/core` | Parser de quick-add em português (datas, horas, recorrência, `#tag`, `~lista`, `!prioridade`) recorrência (próxima ocorrência de RRULE), tarefas e listas inteligentes, e cálculos do controle financeiro (resumo do mês, categorias, saldo por conta, vencimentos, metas, CSV) | Pronto, 105 testes |
-| `apps/web` | App web (React + TanStack Start em modo SPA + Tailwind/shadcn), build estático. Tarefas (quick-add, Inbox, listas, listas inteligentes, recorrência) e controle financeiro (painel, movimentações, resumo mensal, metas) | Em andamento: dados guardados no navegador (IndexedDB), sem sync |
+| `packages/core` | Parser de quick-add em português (datas, horas, recorrência, `#tag`, `~lista`, `!prioridade`) recorrência (próxima ocorrência de RRULE), tarefas e listas inteligentes, e cálculos do controle financeiro (resumo do mês, categorias, saldo por conta, vencimentos, metas, CSV) | Pronto, 118 testes |
+| `apps/web` | App web (React + TanStack Start em modo SPA + Tailwind/shadcn), build estático. Tarefas (quick-add, Inbox, listas, listas inteligentes, recorrência, edição no painel de detalhe) e controle financeiro (painel, movimentações, resumo mensal, metas) | Em andamento: dados guardados no navegador (IndexedDB), sem sync |
 | `apps/api` | API (Python: FastAPI + PostgreSQL) | A fazer |
 
 ## Rodando
