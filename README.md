@@ -40,3 +40,7 @@ Regras de decisão, para discutir e ajustar:
 - Só a hora, sem data: hoje, ou amanhã se o horário já passou.
 - "estudar 2h" é duração, não horário: sem "às", horas abaixo de 6 só valem com minutos ou período.
 - "de manhã", "à tarde" e "à noite" viram 09:00, 15:00 e 20:00 (configurável).
+
+## Licença
+
+MIT, ver [LICENSE](LICENSE).
