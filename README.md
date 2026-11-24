@@ -8,7 +8,7 @@ O plano completo (escopo, arquitetura, modelo de dados, roadmap) está em `docs/
 | Pacote | O que tem | Status |
 | --- | --- | --- |
 | `packages/core` | Parser de quick-add em português (datas, horas, recorrência, `#tag`, `~lista`, `!prioridade`) e cálculos do controle financeiro (resumo do mês, categorias, saldo por conta, vencimentos, metas, CSV) | Pronto, 70 testes |
-| `apps/web` | App web (React + TanStack Start + Tailwind/shadcn). Por enquanto só a tela de controle financeiro: painel com gráficos, movimentações, resumo mensal e metas | Em andamento: dados guardados no navegador (IndexedDB); falta a tela de tarefas |
+| `apps/web` | App web (React + TanStack Start em modo SPA + Tailwind/shadcn), build estático. Por enquanto só a tela de controle financeiro: painel com gráficos, movimentações, resumo mensal e metas | Em andamento: dados guardados no navegador (IndexedDB); falta a tela de tarefas |
 | `apps/api` | API (Python: FastAPI + PostgreSQL) | A fazer |
 
 ## Rodando
@@ -21,7 +21,7 @@ pnpm install
 pnpm test              # roda os testes de todos os pacotes
 pnpm typecheck         # checagem de tipos com o tsc
 pnpm dev               # sobe o app web (o endereço aparece no terminal)
-pnpm build             # build de produção do app web
+pnpm build             # build estático do app web em apps/web/dist/client
 ```
 
 ## Quick-add: o que o parser entende

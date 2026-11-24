@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  ClientOnly,
   Outlet,
   Link,
   createRootRouteWithContext,
@@ -121,7 +122,11 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      {/* ADR 0003: app SPA. As páginas só montam no navegador (dados no IndexedDB), então a casca
+          pré-renderizada e a 1ª renderização do cliente ficam iguais e não há erro de hidratação. */}
+      <ClientOnly fallback={null}>
+        <Outlet />
+      </ClientOnly>
       <Toaster richColors position="top-center" />
     </QueryClientProvider>
   );

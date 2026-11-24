@@ -23,16 +23,14 @@ _Atualizado em 24/11/2026, depois do objetivo 1._
 ## Decisões tomadas
 - Back-end em **Python** (FastAPI + PostgreSQL): `docs/adr/0002-stack-do-back-end.md`.
 - Plano do app versionado em `docs/project/plano.md`.
+- App web como **SPA estático** (modo SPA do TanStack Start, sem servidor): `docs/adr/0003-app-web-como-spa.md`.
 
 ## Decisões pendentes do humano
-1. **App web como SPA?** O plano pede PWA em React + Vite; o app veio do Lovable em TanStack Start, que renderiza
-   no servidor e mira Cloudflare. Para offline e PWA, o mais simples é ligar o modo SPA do TanStack Start
-   (mantém rotas e componentes). Precisa de ADR antes do PWA.
-2. Itens em aberto do plano: onde hospedar (VPS ou máquina em casa), iPhone ou Android, importar de outro app.
+1. Itens em aberto do plano: onde hospedar (VPS ou máquina em casa), iPhone ou Android, importar de outro app.
 
 ## Próximos objetivos sugeridos (em ordem)
 1. Tela de tarefas com quick-add (Inbox e listas), guardada no Dexie como as finanças.
 2. Recorrência em `packages/core` (próxima ocorrência a partir do RRULE), antes dos lembretes.
 3. Navegação única entre Tarefas e Finanças.
-4. PWA offline (depois da decisão do item 1 acima).
+4. PWA offline (service worker guardando o build estático).
 5. `apps/api` em Python e sincronização.

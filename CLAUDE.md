@@ -7,7 +7,7 @@ App pessoal de tarefas (inspirado no TickTick) com controle financeiro. Monorepo
 | Pasta | O que é | Testes |
 |---|---|---|
 | `packages/core/` | `@ticktick/core`: TypeScript puro, sem dependências. Parser de quick-add (`src/parser/`) e cálculos financeiros (`src/finance/`) | `node:test` (`*.test.ts` ao lado do código) |
-| `apps/web/` | `@ticktick/web`: React 19 + TanStack Start + Tailwind 4 + shadcn/ui. Importa a lógica de `@ticktick/core`. Banco local em `src/db/` (Dexie/IndexedDB) | Vitest + Testing Library + fake-indexeddb (`src/test/`) |
+| `apps/web/` | `@ticktick/web`: React 19 + TanStack Start em modo SPA (build estático em `dist/client/`) + Tailwind 4 + shadcn/ui. Importa a lógica de `@ticktick/core`. Banco local em `src/db/` (Dexie/IndexedDB) | Vitest + Testing Library + fake-indexeddb (`src/test/`) |
 | `apps/api/` | Ainda não existe. Será Python (FastAPI + PostgreSQL), ver `docs/adr/0002-stack-do-back-end.md` | pytest |
 | `docs/adr/` | Decisões registradas | — |
 | `docs/project/` | Plano completo (`plano.md`), escopo, status | — |
@@ -20,6 +20,7 @@ pnpm test        # todos os pacotes
 pnpm typecheck
 pnpm lint        # apps/web
 pnpm dev         # sobe o app web
+pnpm build       # gera apps/web/dist/client (estático; fallback de rotas para _shell.html)
 ```
 
 Node 22.18+ (roda `.ts` direto). Num container sem IPv6, suba com `pnpm --filter @ticktick/web dev --host 127.0.0.1`.
@@ -31,6 +32,8 @@ Node 22.18+ (roda `.ts` direto). Num container sem IPv6, suba com `pnpm --filter
 - A tela nunca grava direto no IndexedDB: usa as funções de `apps/web/src/db/`. Todo registro tem id `uuidv7()`
   gerado no aparelho, `criadoEm`/`atualizadoEm` e exclusão lógica (`excluidoEm`), para o sync futuro.
 - Textos de interface, nomes de domínio, commits e docs em português.
+- O app web não tem servidor: nada de loaders/server functions que dependam de SSR. As páginas montam só no
+  navegador (`<ClientOnly>` em `__root.tsx`, ADR 0003).
 - `apps/web/src/components/ui/` é shadcn gerado: evite editar à mão; `src/routeTree.gen.ts` é gerado pelo router.
 - Nada de `git push` sem o humano pedir.
 
