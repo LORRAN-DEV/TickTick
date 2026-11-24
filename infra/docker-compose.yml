@@ -31,6 +31,19 @@ services:
       postgres:
         condition: service_healthy
 
+  # Lembretes (ADR 0008): a cada minuto envia as notificações vencidas. Mesma imagem da API.
+  lembretes:
+    image: ticktick-api
+    restart: unless-stopped
+    command: ["ticktick-api", "lembretes"]
+    environment:
+      TICKTICK_DATABASE_URL: postgresql+psycopg://ticktick:${POSTGRES_SENHA}@postgres:5432/ticktick
+    healthcheck:
+      disable: true # não atende HTTP
+    depends_on:
+      api:
+        condition: service_healthy # a API aplica as migrações ao subir
+
   web:
     image: ticktick-web
     build:

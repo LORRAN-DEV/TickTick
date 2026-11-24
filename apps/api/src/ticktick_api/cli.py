@@ -68,6 +68,8 @@ def main(argv: list[str] | None = None) -> None:
     t = sub.add_parser("preparar-teste", help="zera um banco de teste e cria o usuário (testes e2e)")
     t.add_argument("email")
     t.add_argument("--senha-stdin", action="store_true", required=True)
+    lem = sub.add_parser("lembretes", help="worker: envia os lembretes vencidos a cada minuto")
+    lem.add_argument("--uma-vez", action="store_true", help="varre uma vez e sai")
     s = sub.add_parser("servir", help="sobe a API com uvicorn")
     s.add_argument("--host", default="127.0.0.1")
     s.add_argument("--porta", type=int, default=8000)
@@ -88,6 +90,14 @@ def main(argv: list[str] | None = None) -> None:
     elif a.comando == "preparar-teste":
         preparar_teste(a.email, sys.stdin.readline().rstrip("\n"))
         print(f"Banco de teste pronto, usuário {a.email.strip().lower()}.")
+    elif a.comando == "lembretes":
+        import logging
+
+        from .lembretes import rodar_worker
+
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
+        cfg = config_padrao()
+        rodar_worker(criar_engine(cfg.database_url), cfg.vapid_contato, uma_vez=a.uma_vez)
     elif a.comando == "servir":
         import uvicorn
 

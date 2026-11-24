@@ -4,6 +4,7 @@
  */
 import { weekdayOf, dayOf, type PlainDate } from "../parser/dates.ts";
 import { lerRegra } from "../recurrence/proxima.ts";
+import { normalizarLembretes } from "./lembretes.ts";
 import type { Tarefa } from "./tarefas.ts";
 
 export class TituloVazioError extends Error {
@@ -82,7 +83,7 @@ export function repeticaoDaRegra(rrule: string | null, data: PlainDate | null): 
 }
 
 export type MudancasTarefa = Partial<
-  Pick<Tarefa, "titulo" | "notas" | "prioridade" | "data" | "hora" | "tags" | "listaId" | "rrule">
+  Pick<Tarefa, "titulo" | "notas" | "prioridade" | "data" | "hora" | "tags" | "listaId" | "rrule" | "lembretes">
 >;
 
 /**
@@ -99,6 +100,7 @@ export function editarTarefa(t: Tarefa, m: MudancasTarefa, agoraISO: string, hoj
     if (!novo.titulo) throw new TituloVazioError();
   }
   if ("notas" in m) novo.notas = m.notas?.trim() ? m.notas : undefined;
+  if ("lembretes" in m) novo.lembretes = normalizarLembretes(m.lembretes);
   if ("hora" in m && m.hora && !/^([01]\d|2[0-3]):[0-5]\d$/.test(m.hora)) throw new HoraInvalidaError(m.hora);
 
   const tirouData = "data" in m && m.data === null;

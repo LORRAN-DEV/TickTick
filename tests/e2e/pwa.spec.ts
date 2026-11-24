@@ -40,7 +40,8 @@ test.describe("objetivo 5: PWA", () => {
     await page.evaluate(() => navigator.serviceWorker.ready);
     const cdp = await context.newCDPSession(page);
     const { installabilityErrors } = await cdp.send("Page.getInstallabilityErrors");
-    expect(installabilityErrors).toEqual([]);
+    // "in-incognito": o Chromium de teste roda em modo anônimo, onde nunca se instala app; nada a ver com o app.
+    expect(installabilityErrors.filter((e) => e.errorId !== "in-incognito")).toEqual([]);
   });
 
   test("2. sem internet, as rotas abrem o app com os dados", async ({ page, context }) => {
@@ -109,5 +110,64 @@ test.describe("objetivo 5: PWA", () => {
     await botao.click();
     await expect(botao).toHaveCount(0);
     expect(await page.evaluate(() => (window as unknown as { pediu?: boolean }).pediu)).toBe(true);
+  });
+
+  test("objetivo 10, 5 e 7. push de lembrete mostra a notificação com Concluir e Adiar", async ({ page, context }) => {
+    await abrir(page, "/");
+    await context.grantPermissions(["notifications"], { origin: new URL(page.url()).origin });
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    const cdp = await context.newCDPSession(page);
+    const origem = new URL(page.url()).origin;
+    const registros = new Map<string, boolean>(); // id → ativo (não apagado, da origem do app)
+    cdp.on("ServiceWorker.workerRegistrationUpdated", (e) => {
+      for (const r of e.registrations) registros.set(r.registrationId, !r.isDeleted && r.scopeURL === `${origem}/`);
+    });
+    const versoes = new Map<string, string>(); // registrationId → status da versão ativa
+    cdp.on("ServiceWorker.workerVersionUpdated", (e) => {
+      for (const v of e.versions) if (v.status === "activated") versoes.set(v.registrationId, v.status);
+    });
+    await cdp.send("ServiceWorker.enable");
+    const registroAtivo = () => [...registros].find(([id, ok]) => ok && versoes.has(id))?.[0];
+    await expect.poll(registroAtivo).toBeTruthy();
+    const entregar = () =>
+      cdp.send("ServiceWorker.deliverPushMessage", {
+        origin: origem,
+        registrationId: registroAtivo()!,
+        data: JSON.stringify({
+          tipo: "lembrete",
+          titulo: "reunião",
+          corpo: "Hoje às 15:00",
+          tarefaId: "t123",
+          tag: "lembrete-t123",
+        }),
+      });
+    const notificacoes = () =>
+      page.evaluate(async () =>
+        (await (await navigator.serviceWorker.ready).getNotifications()).map((n) => ({
+          titulo: n.title,
+          corpo: n.body,
+          tag: n.tag,
+          acoes: (n as Notification & { actions?: Array<{ action: string; title: string }> }).actions?.map(
+            (a) => a.title,
+          ),
+          dados: n.data,
+        })),
+      );
+    // Entrega o push; se ainda não apareceu (o worker acabou de ativar), entrega de novo. A tag evita duplicar.
+    await expect
+      .poll(async () => {
+        if (!(await notificacoes()).length) await entregar();
+        return (await notificacoes()).length;
+      }, { timeout: 15_000, intervals: [500, 1000, 2000] })
+      .toBe(1);
+    await expect.poll(notificacoes).toEqual([
+      {
+        titulo: "reunião",
+        corpo: "Hoje às 15:00",
+        tag: "lembrete-t123",
+        acoes: ["Concluir", "Adiar 10 min"],
+        dados: { tarefaId: "t123" },
+      },
+    ]);
   });
 });

@@ -1,11 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
-import { Cloud, LogOut, RefreshCw } from "lucide-react";
+import { useEffect, useState, type FormEvent } from "react";
+import { Bell, BellOff, Cloud, LogOut, RefreshCw, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useSync, type EstadoSync } from "@/db/sync/contexto";
+import {
+  ativarNotificacoes,
+  desativarNotificacoes,
+  enviarTeste,
+  estadoNotificacoes,
+  PermissaoNegadaError,
+  type EstadoNotificacoes,
+} from "@/db/sync/notificacoes";
 
 export const Route = createFileRoute("/conta")({
   head: () => ({ meta: [{ title: "Conta — TickTick" }] }),
@@ -80,7 +88,89 @@ function Logado() {
           Sair
         </Button>
       </div>
+      <Notificacoes />
     </Card>
+  );
+}
+
+const TEXTO_NOTIFICACOES: Record<EstadoNotificacoes, string> = {
+  "sem-suporte": "Este navegador não recebe notificações.",
+  "sem-service-worker":
+    "As notificações funcionam no app instalado, aberto pelo endereço com HTTPS (não no modo de desenvolvimento).",
+  bloqueadas:
+    "O navegador está bloqueando as notificações deste site. No Chrome do Android: toque no cadeado ao lado do endereço → Permissões → Notificações → Permitir. Depois volte aqui.",
+  desativadas: "Desativadas neste aparelho.",
+  ativadas: "Ativadas neste aparelho. Os lembretes chegam mesmo com o app fechado.",
+};
+
+/** Notificações dos lembretes neste aparelho (ADR 0008). */
+function Notificacoes() {
+  const [estado, setEstado] = useState<EstadoNotificacoes | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+  const atualizar = () => void estadoNotificacoes().then(setEstado, () => setEstado("sem-suporte"));
+  useEffect(atualizar, []);
+
+  const fazer = async (acao: () => Promise<unknown>, sucesso: string) => {
+    setOcupado(true);
+    try {
+      await acao();
+      toast.success(sucesso);
+    } catch (e) {
+      if (!(e instanceof PermissaoNegadaError)) console.error(e);
+      toast.error(e instanceof Error ? e.message : "Não foi possível");
+    } finally {
+      setOcupado(false);
+      atualizar();
+    }
+  };
+
+  return (
+    <section aria-labelledby="titulo-notificacoes" className="space-y-2 border-t pt-4">
+      <h2 id="titulo-notificacoes" className="flex items-center gap-2 font-medium">
+        <Bell className="h-4 w-4" aria-hidden />
+        Notificações
+      </h2>
+      <p className="text-sm text-muted-foreground" data-testid="estado-notificacoes">
+        {estado ? TEXTO_NOTIFICACOES[estado] : "Verificando…"}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {estado === "desativadas" && (
+          <Button
+            disabled={ocupado}
+            onClick={() => fazer(ativarNotificacoes, "Notificações ativadas")}
+          >
+            <Bell className="h-4 w-4" />
+            Ativar notificações
+          </Button>
+        )}
+        {estado === "ativadas" && (
+          <>
+            <Button
+              disabled={ocupado}
+              onClick={() =>
+                fazer(async () => {
+                  if (!(await enviarTeste()))
+                    throw new Error("Nenhum aparelho recebeu. Ative de novo.");
+                }, "Teste enviado")
+              }
+            >
+              <Send className="h-4 w-4" />
+              Enviar teste
+            </Button>
+            <Button
+              variant="outline"
+              disabled={ocupado}
+              onClick={() =>
+                fazer(desativarNotificacoes, "Notificações desativadas neste aparelho")
+              }
+            >
+              <BellOff className="h-4 w-4" />
+              Desativar
+            </Button>
+          </>
+        )}
+      </div>
+    </section>
   );
 }
 

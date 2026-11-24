@@ -7,6 +7,7 @@
 import { addDays, type PlainDate } from "../parser/dates.ts";
 import type { ParsedTask, Priority } from "../parser/quick-add.ts";
 import { proximaOcorrencia } from "../recurrence/proxima.ts";
+import type { Lembrete } from "./lembretes.ts";
 
 export type StatusTarefa = "aberta" | "concluida" | "nao_vou_fazer";
 
@@ -26,6 +27,8 @@ export interface Tarefa {
   listaId: string;
   /** Tarefa-mãe, se esta for uma subtarefa. */
   paiId?: string | undefined;
+  /** Lembretes em minutos antes da hora (ADR 0008). */
+  lembretes?: Lembrete[] | undefined;
   concluidaEm?: string | undefined;
   /** Na cópia concluída de uma recorrente: id da tarefa que continua repetindo. */
   origemId?: string | undefined;
@@ -60,8 +63,19 @@ export const NOMES_INTELIGENTES: Record<ListaInteligente, string> = {
 };
 
 /** Campos de uma tarefa nova vindos do quick-add (sem id, datas de sync nem lista resolvida). */
-export function dadosDoQuickAdd(p: ParsedTask): Pick<Tarefa, "titulo" | "data" | "hora" | "rrule" | "prioridade" | "tags"> {
-  return { titulo: p.title, data: p.date, hora: p.time, rrule: p.rrule, prioridade: p.priority, tags: p.tags };
+/** Campos de uma tarefa nova vindos do quick-add. Com hora, já vem com lembrete "na hora" (como no TickTick). */
+export function dadosDoQuickAdd(
+  p: ParsedTask,
+): Pick<Tarefa, "titulo" | "data" | "hora" | "rrule" | "prioridade" | "tags" | "lembretes"> {
+  return {
+    titulo: p.title,
+    data: p.date,
+    hora: p.time,
+    rrule: p.rrule,
+    prioridade: p.priority,
+    tags: p.tags,
+    lembretes: p.time ? [{ antes: 0 }] : [],
+  };
 }
 
 export const atrasada = (t: Tarefa, hoje: PlainDate): boolean =>

@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, Sequence, String, func
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, Integer, Sequence, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -19,6 +19,8 @@ class Usuario(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     email: Mapped[str] = mapped_column(String(320), unique=True)
     senha_hash: Mapped[str] = mapped_column(String(255))
+    # Fuso usado nos lembretes; vem do aparelho ao ativar as notificações.
+    fuso: Mapped[str] = mapped_column(String(64), server_default="America/Sao_Paulo")
     criado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -53,3 +55,50 @@ class Registro(Base):
     server_version: Mapped[int] = mapped_column(BigInteger)
 
     __table_args__ = (Index("ix_registros_usuario_versao", "usuario_id", "server_version"),)
+
+
+class PushAssinatura(Base):
+    """Um aparelho que recebe notificações (Web Push). Ver ADR 0008."""
+
+    __tablename__ = "push_assinaturas"
+
+    endpoint: Mapped[str] = mapped_column(Text, primary_key=True)
+    usuario_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("usuarios.id", ondelete="CASCADE"), index=True)
+    p256dh: Mapped[str] = mapped_column(String(255))
+    auth: Mapped[str] = mapped_column(String(255))
+    aparelho: Mapped[str] = mapped_column(String(200), default="")
+    criada_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class LembreteEnviado(Base):
+    """Disparo já enviado (tarefa + instante): cada lembrete sai uma vez só."""
+
+    __tablename__ = "lembretes_enviados"
+
+    usuario_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("usuarios.id", ondelete="CASCADE"), primary_key=True
+    )
+    tarefa_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    instante: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
+    enviado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Adiamento(Base):
+    """'Adiar 10 min' na notificação: o servidor manda de novo em `quando`."""
+
+    __tablename__ = "adiamentos"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    usuario_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("usuarios.id", ondelete="CASCADE"), index=True)
+    tarefa_id: Mapped[str] = mapped_column(String(64))
+    quando: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    enviado_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class ConfigServidor(Base):
+    """Chave/valor do servidor (ex.: chaves VAPID geradas na primeira vez)."""
+
+    __tablename__ = "config_servidor"
+
+    chave: Mapped[str] = mapped_column(String(100), primary_key=True)
+    valor: Mapped[str] = mapped_column(Text)

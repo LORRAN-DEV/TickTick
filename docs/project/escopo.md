@@ -229,3 +229,27 @@ restaurar backup pela interface.
    de 14 dias; o guia mostra como restaurar.
 6. Os dados sobrevivem a `docker compose down` + `up` (volume do Postgres).
 7. O CI sobe o compose e verifica os itens 1 a 4 a cada push.
+
+## Objetivo 10 — Lembretes com notificação no celular (concluído)
+
+**Por quê:** "capturar e ser lembrado" é o núcleo do MVP. Sem lembrete, uma tarefa com hora passa despercebida.
+
+**Dentro:** um ou mais lembretes por tarefa (na hora, 5/15/30 min, 1 h ou 1 dia antes); tarefa criada com hora já
+vem com lembrete "na hora"; ativar notificações por aparelho na página Conta, com notificação de teste; o servidor
+envia Web Push no horário, mesmo com o app fechado; botões "Concluir" e "Adiar 10 min" na notificação.
+
+**Fora:** lembrete por e-mail e lembrete constante (fase 2 do plano), horário personalizado, lembrete diário de
+planejamento.
+
+### Critérios de aceite
+1. **No** painel da tarefa, **escolho** um ou mais lembretes; **na lista**, a tarefa mostra um sino com o resumo.
+2. **Quando** crio `reunião amanhã 15h`, **então** ela já vem com lembrete "na hora"; sem hora, sem lembrete.
+3. **Tarefa sem hora** com lembrete: o horário de referência é 09:00 do dia (ex.: "1 dia antes" = 09:00 da véspera).
+4. **Na** página Conta, "Ativar notificações" pede permissão ao navegador e inscreve o aparelho; "Enviar teste" faz
+   chegar uma notificação. Se o navegador bloquear, a página explica como liberar.
+5. **No horário do lembrete** (no fuso do aparelho que se inscreveu), o servidor manda uma notificação com o título
+   e a hora da tarefa para todos os aparelhos inscritos, mesmo com o app fechado. Cada lembrete sai uma vez só.
+6. Tarefa concluída, na lixeira ou com a data mudada não dispara lembrete antigo. Recorrente: lembra a ocorrência atual.
+7. "Adiar 10 min" na notificação faz ela voltar 10 minutos depois; "Concluir" conclui a tarefa (recorrente avança).
+8. Se o servidor ficou desligado na hora, o lembrete sai quando ele voltar, se o atraso for de até 6 horas;
+   depois disso, é descartado. Aparelho que desinstalou o app deixa de receber (inscrição vencida é apagada).

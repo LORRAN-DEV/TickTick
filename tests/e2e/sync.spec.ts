@@ -81,6 +81,10 @@ test.describe("objetivo 8: sincronização", () => {
       await a.getByRole("button", { name: "Entrar" }).click();
       await expect(a.getByText(EMAIL_E2E)).toBeVisible();
       await sincronizado(a);
+      // objetivo 10, critério 4: sem poder notificar (aqui o navegador de teste nega a permissão e não há
+      // service worker), a página explica o porquê e como resolver, em vez de um botão que não funcionaria
+      await expect(a.getByTestId("estado-notificacoes")).toHaveText(/bloqueando as notificações|funcionam no app instalado/);
+      await expect(a.getByRole("button", { name: "Ativar notificações" })).toHaveCount(0);
       await a.getByRole("button", { name: "Sair" }).click();
       await expect(a.getByRole("button", { name: "Entrar" })).toBeVisible();
       await expect(indicador(a)).toHaveAttribute("aria-label", "Conta");

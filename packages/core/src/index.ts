@@ -5,6 +5,7 @@ export * from "./tasks/tarefas.ts";
 export * from "./tasks/edicao.ts";
 export * from "./tasks/hierarquia.ts";
 export * from "./tasks/checklist.ts";
+export * from "./tasks/lembretes.ts";
 export * from "./finance/finance.ts";
 export * from "./finance/format.ts";
 export * from "./ids.ts";

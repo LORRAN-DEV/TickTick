@@ -83,5 +83,10 @@ describe("concluir", () => {
 
 test("dados do quick-add", () => {
   const p = parseQuickAdd("pagar boleto amanhã 15h !alta #casa", { now: new Date("2026-11-24T13:00:00Z"), timeZone: "America/Sao_Paulo" });
-  assert.deepEqual(dadosDoQuickAdd(p), { titulo: "pagar boleto", data: "2026-11-25", hora: "15:00", rrule: null, prioridade: 3, tags: ["casa"] });
+  assert.deepEqual(dadosDoQuickAdd(p), {
+    titulo: "pagar boleto", data: "2026-11-25", hora: "15:00", rrule: null, prioridade: 3, tags: ["casa"],
+    lembretes: [{ antes: 0 }], // com hora: lembrete "na hora" (objetivo 10, critério 2)
+  });
+  const semHora = parseQuickAdd("ler livro amanhã", { now: new Date("2026-11-24T13:00:00Z"), timeZone: "America/Sao_Paulo" });
+  assert.deepEqual(dadosDoQuickAdd(semHora).lembretes, []);
 });

@@ -1,6 +1,6 @@
 # Status do projeto
 
-_Atualizado em 24/11/2026, depois do objetivo 9._
+_Atualizado em 24/11/2026, depois do objetivo 10._
 
 ## Pronto
 - **Parser de quick-add** em português: datas, horas, recorrência, `#tag`, `~lista`, `!prioridade`
@@ -33,11 +33,13 @@ _Atualizado em 24/11/2026, depois do objetivo 9._
   "Offline · N pendentes", "Entre de novo"). Verificado com dois aparelhos e a API de verdade. `docs/qa/objetivo-8.md`.
 - **Objetivo 9: implantação**: `infra/` com Docker Compose (Postgres, API, Caddy com HTTPS servindo o app e
   repassando `/api`, backup diário de 14 dias), guia `infra/README.md` e `infra/verificar.sh`. `docs/qa/objetivo-9.md`.
+- **Objetivo 10: lembretes**: um ou mais por tarefa (na hora até 1 dia antes), tarefa com hora já vem com
+  "na hora", notificações por aparelho na página Conta, worker no servidor manda Web Push no horário, com
+  "Concluir" e "Adiar 10 min". `docs/qa/objetivo-10.md`.
 - **Time de agentes** configurado (`CLAUDE.md`, `.claude/agents/`, `.claude/skills/`).
 
 ## Falta
 - Pastas, notas em Markdown (hoje são texto puro) e arrastar para reordenar.
-- Lembretes e notificações.
 - Contas e categorias editáveis (a tela usa listas fixas), transferências na interface, importar/exportar CSV.
 - Aviso instantâneo entre aparelhos (SSE): hoje o outro aparelho vê a mudança em até 60 s.
 
@@ -48,14 +50,17 @@ _Atualizado em 24/11/2026, depois do objetivo 9._
 - **PWA** com service worker do Workbox gerado depois do build: `docs/adr/0004-pwa-com-workbox-depois-do-build.md`.
 - **Servidor de sync** com documentos JSONB e relógio por campo: `docs/adr/0005-servidor-de-sync.md`.
 - **Cliente de sync** com fila de saída por middleware do Dexie: `docs/adr/0006-cliente-de-sync.md`.
+- **Lembretes** como campo da tarefa + worker + Web Push: `docs/adr/0008-lembretes-e-web-push.md`.
 - **Hospedagem:** PC em casa com Tailscale (domínio `.ts.net` e HTTPS grátis); celular Android:
   `docs/adr/0007-hospedagem-pc-em-casa-com-tailscale.md`.
 
 ## Decisões pendentes do humano
 1. Item em aberto do plano: importar tarefas de outro app (TickTick, Todoist)?
 
+## Pendente do humano
+- Instalar no PC com Tailscale (`infra/README.md`) e testar as notificações no Android.
+
 ## Próximos objetivos sugeridos (em ordem)
-1. **Você** subir no PC seguindo `infra/README.md` ("PC em casa + Tailscale"); depois, usar por duas semanas, como o
-   plano pede antes da fase 2.
-2. Lembretes: worker no servidor e Web Push.
+1. Pastas para agrupar listas (último item da fase 1 do plano).
+2. Usar por duas semanas, como o plano pede, antes da fase 2 (calendário, Kanban, Eisenhower).
 3. Aviso instantâneo entre aparelhos (SSE).

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   CalendarDays,
   CalendarClock,
@@ -12,6 +12,7 @@ import {
   ListTodo,
   ListTree,
   Repeat,
+  Bell,
   RotateCcw,
   Sun,
   Trash2,
@@ -23,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import {
   atrasada,
   descreverRegra,
+  descreverLembrete,
   filtrarInteligente,
   filtrarLista,
   hojeLocal,
@@ -85,6 +87,25 @@ function PaginaTarefas() {
   const { tarefas, listas, itens } = useTarefas();
   const [visao, setVisao] = useState<Visao>({ tipo: "inteligente", id: "hoje" });
   const [detalheId, setDetalheId] = useState<string | null>(null);
+
+  // Vindo de uma notificação (ADR 0008): /?concluir=<id> conclui; /?tarefa=<id> abre o detalhe.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const concluir = q.get("concluir");
+    const abrir = q.get("tarefa");
+    if (!concluir && !abrir) return;
+    window.history.replaceState(null, "", window.location.pathname);
+    if (abrir) setDetalheId(abrir);
+    if (concluir) {
+      concluirTarefa(concluir).then(
+        () => toast.success("Tarefa concluída"),
+        (e: unknown) => {
+          console.error(e);
+          toast.error("Não foi possível concluir a tarefa");
+        },
+      );
+    }
+  }, []);
   const detalhe = detalheId ? (tarefas.find((t) => t.id === detalheId) ?? null) : null;
   const hoje = hojeLocal();
 
@@ -391,6 +412,13 @@ function LinhaTarefa({
               {rotuloData(t.data, hoje)}
               {t.hora ? ` ${t.hora}` : ""}
               {vencida ? " (atrasada)" : ""}
+            </span>
+          )}
+          {aberta && t.data && !!t.lembretes?.length && (
+            <span className="flex items-center gap-1" title="Lembretes">
+              <Bell className="h-3.5 w-3.5" aria-hidden />
+              <span className="sr-only">Lembretes: </span>
+              {t.lembretes.map((l) => descreverLembrete(l.antes)).join(", ")}
             </span>
           )}
           {t.rrule && (

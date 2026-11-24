@@ -10,7 +10,7 @@ App pessoal de tarefas (inspirado no TickTick) com controle financeiro. Monorepo
 | `apps/web/` | `@ticktick/web`: React 19 + TanStack Start em modo SPA (build estático em `dist/client/`) + Tailwind 4 + shadcn/ui. Importa a lógica de `@ticktick/core`. Rotas: `/` tarefas, `/financas`. Banco local em `src/db/` (Dexie/IndexedDB, esquema em `banco.ts`); sync em `src/db/sync/` (ADR 0006) | Vitest + Testing Library + fake-indexeddb (`src/test/`) |
 | `apps/api/` | `ticktick-api`: Python 3.12+ com uv, FastAPI + SQLAlchemy 2 + Alembic + PostgreSQL 16. Login (`auth.py`) e sync (`sync.py`) conforme ADR 0002 e 0005; comandos `migrar`, `criar-usuario`, `servir`. Ver `apps/api/README.md` | `pnpm test:api` (pytest; precisa de Postgres, banco `*teste` é apagado) |
 | `tests/` | `@ticktick/e2e`: Playwright contra o build de produção, um arquivo por objetivo, critério no nome do teste. Ajudantes em `e2e/ajuda.ts` (relógio fixo em 24/11/2026 10:00 SP) | `pnpm e2e` |
-| `infra/` | Docker Compose de produção (Postgres, API, Caddy+app, backup), `verificar.sh` e guia `README.md` | job `docker` no CI |
+| `infra/` | Docker Compose de produção (Postgres, API, worker de lembretes, Caddy+app, backup), `verificar.sh` e guia `README.md` | job `docker` no CI |
 | `docs/adr/` | Decisões registradas | — |
 | `docs/qa/` | Relatório de QA de cada objetivo | — |
 | `docs/project/` | Plano completo (`plano.md`), escopo, status | — |

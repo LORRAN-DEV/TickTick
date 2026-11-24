@@ -17,6 +17,8 @@ class Config(BaseSettings):
     login_janela_segundos: int = 60
     # IPs de proxies cujo X-Forwarded-For vale (uvicorn forwarded_allow_ips). "*" só atrás de rede fechada.
     proxies_confiaveis: str = "127.0.0.1"
+    # Contato VAPID ("sub") mandado ao serviço de push. Genérico de propósito: nenhum dado pessoal sai daqui.
+    vapid_contato: str = "mailto:ticktick@localhost.localdomain"
 
 
 @lru_cache

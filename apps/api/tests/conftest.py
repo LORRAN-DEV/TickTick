@@ -38,7 +38,12 @@ def engine() -> Iterator[Engine]:
 @pytest.fixture(autouse=True)
 def banco_limpo(engine: Engine) -> None:
     with engine.begin() as c:
-        c.execute(text("TRUNCATE usuarios, sessoes, registros CASCADE"))
+        c.execute(
+            text(
+                "TRUNCATE usuarios, sessoes, registros, push_assinaturas, lembretes_enviados, adiamentos,"
+                " config_servidor CASCADE"
+            )
+        )
         c.execute(text("ALTER SEQUENCE versao_registros RESTART"))
 
 

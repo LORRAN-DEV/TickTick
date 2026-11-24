@@ -57,7 +57,8 @@ export default defineConfig({
     // Objetivos 1 a 4 e 8. Sem service worker, para o cache não interferir entre testes.
     { name: "app", testIgnore: /pwa\.spec\.ts/, use: { serviceWorkers: "block" } },
     // Objetivo 5.
-    { name: "pwa", testMatch: /pwa\.spec\.ts/, use: { serviceWorkers: "allow" } },
+    // Chromium completo (headless novo): o "headless shell" padrão não mostra notificações (objetivo 10).
+    { name: "pwa", testMatch: /pwa\.spec\.ts/, use: { serviceWorkers: "allow", channel: "chromium" } },
   ],
   webServer: BANCO_E2E ? [servidorApi, servidorApp] : [servidorApp],
 });

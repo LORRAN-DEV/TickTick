@@ -4,9 +4,10 @@ from fastapi import FastAPI
 from sqlalchemy import Engine
 from sqlalchemy.orm import sessionmaker
 
-from . import auth, sync
+from . import auth, rotas_push, sync
 from .config import Config, config_padrao
 from .db import criar_engine
+from .push import enviador_real
 from .seguranca import LimiteDeTentativas
 
 
@@ -23,10 +24,12 @@ def criar_app(config: Config | None = None, engine: Engine | None = None) -> Fas
     )
     app.state.config = config
     app.state.sessoes = sessionmaker(engine, expire_on_commit=False)
+    app.state.enviador_push = enviador_real  # os testes trocam por um falso
     app.state.limite_login = LimiteDeTentativas(config.login_max_falhas, config.login_janela_segundos)
 
     app.include_router(auth.rotas)
     app.include_router(sync.rotas)
+    app.include_router(rotas_push.rotas)
 
     @app.get("/api/saude", tags=["saúde"])
     def saude() -> dict[str, str]:

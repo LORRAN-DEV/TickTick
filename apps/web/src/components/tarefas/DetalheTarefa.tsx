@@ -3,7 +3,7 @@
  * seletores, data e hora ao mudar. As regras de coerência ficam em `editarTarefa` (core).
  */
 import { useEffect, useId, useState, type ReactNode } from "react";
-import { Ban, CheckCircle2, CornerLeftUp, Trash2 } from "lucide-react";
+import { Ban, Bell, CheckCircle2, CornerLeftUp, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,9 @@ import {
   normalizarTags,
   regraDaRepeticao,
   REPETICOES_PRONTAS,
+  LEMBRETES_PRONTOS,
+  alternarLembrete,
+  descreverLembrete,
   repeticaoDaRegra,
   TituloVazioError,
   type ItemChecklist,
@@ -219,6 +222,9 @@ function Campos({
           </Campo>
         </div>
         <div className="col-span-2">
+          <Lembretes t={t} salvar={salvar} />
+        </div>
+        <div className="col-span-2">
           <CampoTexto
             rotulo="Tags"
             dica="Separe por vírgula ou espaço"
@@ -363,5 +369,43 @@ function CampoTexto({
         </>
       )}
     </Campo>
+  );
+}
+
+/** Lembretes da tarefa (ADR 0008): botões que ligam e desligam cada opção. */
+function Lembretes({ t, salvar }: { t: Tarefa; salvar: (m: MudancasTarefa) => Promise<boolean> }) {
+  const ativos = new Set((t.lembretes ?? []).map((l) => l.antes));
+  return (
+    <fieldset className="flex flex-col gap-1" disabled={!t.data}>
+      <legend className="mb-1 flex items-center gap-1 text-xs font-medium text-muted-foreground">
+        <Bell className="h-3.5 w-3.5" aria-hidden />
+        Lembretes
+      </legend>
+      <div className="flex flex-wrap gap-1.5">
+        {LEMBRETES_PRONTOS.map((antes) => {
+          const ligado = ativos.has(antes);
+          return (
+            <button
+              key={antes}
+              type="button"
+              aria-pressed={ligado}
+              onClick={() => void salvar({ lembretes: alternarLembrete(t.lembretes, antes) })}
+              className={`rounded-full border px-2.5 py-1 text-xs transition disabled:opacity-50 ${
+                ligado ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted"
+              }`}
+            >
+              {descreverLembrete(antes)}
+            </button>
+          );
+        })}
+      </div>
+      <span className="text-xs text-muted-foreground">
+        {t.data
+          ? t.hora
+            ? "Chega no celular com as notificações ativadas (página Conta)."
+            : "Sem hora, a referência é 09:00 do dia."
+          : "Escolha uma data para usar lembretes."}
+      </span>
+    </fieldset>
   );
 }
