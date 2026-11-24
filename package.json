@@ -11,6 +11,7 @@
     "build": "pnpm --filter @ticktick/web build",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
-    "lint": "pnpm --filter @ticktick/web lint"
+    "lint": "pnpm --filter @ticktick/web lint",
+    "e2e": "pnpm --filter @ticktick/e2e e2e"
   }
 }

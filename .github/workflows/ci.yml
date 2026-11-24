@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    name: Testes, tipos, lint, build e e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4 # versão do pnpm vem de "packageManager" no package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Testes de unidade (core e web)
+        run: pnpm test
+
+      - name: Tipos
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build
+        run: pnpm build
+
+      - name: Navegador do Playwright
+        run: pnpm --filter @ticktick/e2e exec playwright install --with-deps chromium
+
+      - name: Testes de ponta a ponta
+        run: pnpm e2e
+
+      - name: Guardar resultados do e2e se falhar
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-resultados
+          path: tests/test-results/
+          retention-days: 7

@@ -1,6 +1,7 @@
 packages:
   - "apps/*"
   - "packages/*"
+  - "tests"
 
 overrides:
   rolldown: 1.2.1

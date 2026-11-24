@@ -25,7 +25,10 @@ export function AvisosPWA() {
       });
     });
 
-    wb.register().catch((e) => console.error("Falha ao registrar o service worker", e));
+    // Sem service worker (navegador bloqueia, modo privado...) o app funciona igual, só não abre offline.
+    wb.register().catch((e) =>
+      console.warn("Service worker indisponível; o app não abrirá sem internet", e),
+    );
   }, []);
   return null;
 }

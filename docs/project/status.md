@@ -1,6 +1,6 @@
 # Status do projeto
 
-_Atualizado em 24/11/2026, depois do objetivo 5._
+_Atualizado em 24/11/2026, depois do objetivo 6._
 
 ## Pronto
 - **Parser de quick-add** em português: datas, horas, recorrência, `#tag`, `~lista`, `!prioridade`
@@ -23,6 +23,8 @@ _Atualizado em 24/11/2026, depois do objetivo 5._
 - **Objetivo 5: PWA**: o app abre sem internet (inclusive `/financas` e recarregando), pode ser instalado (botão
   "Instalar" no menu quando o navegador oferece) e avisa quando há versão nova, trocando só quando você clica em
   "Atualizar". Verificado em `docs/qa/objetivo-5.md`.
+- **Objetivo 6: testes de ponta a ponta e CI**: 33 testes em `tests/e2e/` cobrindo os critérios dos objetivos 1 a 5
+  (`pnpm e2e`), e o GitHub Actions rodando testes, tipos, lint, build e e2e a cada push. `docs/qa/objetivo-6.md`.
 - **Time de agentes** configurado (`CLAUDE.md`, `.claude/agents/`, `.claude/skills/`).
 
 ## Falta
@@ -30,7 +32,6 @@ _Atualizado em 24/11/2026, depois do objetivo 5._
 - Lembretes e notificações.
 - Contas e categorias editáveis (a tela usa listas fixas), transferências na interface, importar/exportar CSV.
 - Back-end e sincronização entre aparelhos.
-- Testes de ponta a ponta no navegador.
 
 ## Decisões tomadas
 - Back-end em **Python** (FastAPI + PostgreSQL): `docs/adr/0002-stack-do-back-end.md`.
@@ -42,5 +43,5 @@ _Atualizado em 24/11/2026, depois do objetivo 5._
 1. Itens em aberto do plano: onde hospedar (VPS ou máquina em casa), iPhone ou Android, importar de outro app.
 
 ## Próximos objetivos sugeridos (em ordem)
-1. Suíte e2e versionada em `tests/` (Playwright) com os roteiros dos objetivos 1 a 5.
-2. `apps/api` em Python, sincronização e lembretes (Web Push).
+1. `apps/api` em Python: login, modelo de dados e sync (`/sync/pull`, `/sync/push`), como no plano.
+2. Sincronização no app web (fila de saída no Dexie) e lembretes (Web Push).

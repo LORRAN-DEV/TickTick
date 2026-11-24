@@ -7,3 +7,6 @@ dist/
 .DS_Store
 coverage/
 .claude/settings.local.json
+tests/.tmp/
+tests/test-results/
+tests/playwright-report/

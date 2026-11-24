@@ -22,7 +22,12 @@ pnpm test              # roda os testes de todos os pacotes
 pnpm typecheck         # checagem de tipos com o tsc
 pnpm dev               # sobe o app web (o endereço aparece no terminal)
 pnpm build             # build estático do app web em apps/web/dist/client
+pnpm e2e               # testes de ponta a ponta no navegador (Playwright), contra o build
 ```
+
+Para o `pnpm e2e` numa máquina nova, instale o navegador uma vez:
+`pnpm --filter @ticktick/e2e exec playwright install chromium`. O GitHub Actions (`.github/workflows/ci.yml`)
+roda testes, tipos, lint, build e e2e a cada push.
 
 ## Quick-add: o que o parser entende
 

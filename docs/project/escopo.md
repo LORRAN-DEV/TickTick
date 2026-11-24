@@ -135,3 +135,18 @@ botão "Instalar" quando o navegador oferece.
    o app não recarrega sozinho (para não perder o que estou digitando).
 5. **Quando** o navegador permite instalar, **então** aparece um botão "Instalar" no menu; depois de instalado, some.
 6. Nada muda nos dados guardados (IndexedDB) ao instalar ou atualizar.
+
+## Objetivo 6 — Suíte de testes de ponta a ponta e integração contínua (concluído)
+
+**Por quê:** os critérios dos objetivos 1 a 5 foram verificados com roteiros avulsos, fora do repositório. Sem
+eles versionados, uma mudança futura pode quebrar algo sem ninguém ver. O plano prevê Playwright e CI.
+
+**Dentro:** pacote `tests/` com Playwright cobrindo os critérios de aceite dos objetivos 1 a 5, rodando contra o
+build de produção; comando `pnpm e2e`; workflow do GitHub Actions rodando testes, tipos, lint, build e e2e a cada push.
+
+### Critérios de aceite
+1. `pnpm e2e` sobe o app sozinho (build + servidor estático), roda a suíte e encerra tudo, sem deixar processos.
+2. Cada critério dos objetivos 1 a 5 que dá para verificar no navegador tem um teste com o número do critério no nome.
+3. Os testes são determinísticos: relógio fixado em terça 24/11/2026 10:00 em São Paulo; nada depende da data real.
+4. A suíte passa 3 vezes seguidas sem falhas (sem testes instáveis).
+5. O GitHub Actions roda `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build` e `pnpm e2e` em cada push e pull request.

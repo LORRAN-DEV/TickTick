@@ -9,7 +9,9 @@ App pessoal de tarefas (inspirado no TickTick) com controle financeiro. Monorepo
 | `packages/core/` | `@ticktick/core`: TypeScript puro, sem dependências. Parser de quick-add (`src/parser/`), recorrência (`src/recurrence/`), tarefas, listas inteligentes, edição, subtarefas e checklist (`src/tasks/`), ids UUID v7 monotônicos (`src/ids.ts`) e cálculos financeiros (`src/finance/`) | `node:test` (`*.test.ts` ao lado do código) |
 | `apps/web/` | `@ticktick/web`: React 19 + TanStack Start em modo SPA (build estático em `dist/client/`) + Tailwind 4 + shadcn/ui. Importa a lógica de `@ticktick/core`. Rotas: `/` tarefas, `/financas`. Banco local em `src/db/` (Dexie/IndexedDB, esquema em `banco.ts`) | Vitest + Testing Library + fake-indexeddb (`src/test/`) |
 | `apps/api/` | Ainda não existe. Será Python (FastAPI + PostgreSQL), ver `docs/adr/0002-stack-do-back-end.md` | pytest |
+| `tests/` | `@ticktick/e2e`: Playwright contra o build de produção, um arquivo por objetivo, critério no nome do teste. Ajudantes em `e2e/ajuda.ts` (relógio fixo em 24/11/2026 10:00 SP) | `pnpm e2e` |
 | `docs/adr/` | Decisões registradas | — |
+| `docs/qa/` | Relatório de QA de cada objetivo | — |
 | `docs/project/` | Plano completo (`plano.md`), escopo, status | — |
 
 ## Comandos (na raiz)
@@ -21,7 +23,11 @@ pnpm typecheck
 pnpm lint        # apps/web
 pnpm dev         # sobe o app web
 pnpm build       # gera apps/web/dist/client (estático; fallback de rotas para _shell.html) + sw.js do PWA
+pnpm e2e         # build + servidor estático + Playwright (≈1 min); CI roda tudo isso a cada push
 ```
+
+Objetivo novo com tela? Os critérios de aceite viram testes em `tests/e2e/<objetivo>.spec.ts`, e a suíte
+inteira tem que passar antes do push.
 
 Node 22.18+ (roda `.ts` direto). Num container sem IPv6, suba com `pnpm --filter @ticktick/web dev --host 127.0.0.1 --strictPort`
 e encerre com `pkill -f "vite.js dev"` (o nome do processo é `vite.js dev`; `pkill -f "vite dev"` não acha nada).
