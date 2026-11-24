@@ -1,4 +1,4 @@
-# meu-tick
+# TickTick
 
 App pessoal de tarefas inspirado no TickTick: PWA offline-first com back-end self-hosted.
 O plano completo (escopo, arquitetura, modelo de dados, roadmap) está no documento
