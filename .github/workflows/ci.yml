@@ -9,6 +9,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  api:
+    name: API (pytest com PostgreSQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ticktick
+          POSTGRES_PASSWORD: ticktick
+          POSTGRES_DB: ticktick_teste
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ticktick" --health-interval 5s --health-timeout 5s --health-retries 10
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - name: Lint e formatação
+        run: uv run ruff check . && uv run ruff format --check .
+      - name: Testes
+        run: uv run pytest
+        env:
+          TICKTICK_TEST_DATABASE_URL: postgresql+psycopg://ticktick:ticktick@127.0.0.1:5432/ticktick_teste
+
   verificar:
     name: Testes, tipos, lint, build e e2e
     runs-on: ubuntu-latest

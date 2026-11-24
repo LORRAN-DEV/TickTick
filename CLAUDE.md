@@ -8,7 +8,7 @@ App pessoal de tarefas (inspirado no TickTick) com controle financeiro. Monorepo
 |---|---|---|
 | `packages/core/` | `@ticktick/core`: TypeScript puro, sem dependências. Parser de quick-add (`src/parser/`), recorrência (`src/recurrence/`), tarefas, listas inteligentes, edição, subtarefas e checklist (`src/tasks/`), ids UUID v7 monotônicos (`src/ids.ts`) e cálculos financeiros (`src/finance/`) | `node:test` (`*.test.ts` ao lado do código) |
 | `apps/web/` | `@ticktick/web`: React 19 + TanStack Start em modo SPA (build estático em `dist/client/`) + Tailwind 4 + shadcn/ui. Importa a lógica de `@ticktick/core`. Rotas: `/` tarefas, `/financas`. Banco local em `src/db/` (Dexie/IndexedDB, esquema em `banco.ts`) | Vitest + Testing Library + fake-indexeddb (`src/test/`) |
-| `apps/api/` | Ainda não existe. Será Python (FastAPI + PostgreSQL), ver `docs/adr/0002-stack-do-back-end.md` | pytest |
+| `apps/api/` | `ticktick-api`: Python 3.12+ com uv, FastAPI + SQLAlchemy 2 + Alembic + PostgreSQL 16. Login (`auth.py`) e sync (`sync.py`) conforme ADR 0002 e 0005; comandos `migrar`, `criar-usuario`, `servir`. Ver `apps/api/README.md` | `pnpm test:api` (pytest; precisa de Postgres, banco `*teste` é apagado) |
 | `tests/` | `@ticktick/e2e`: Playwright contra o build de produção, um arquivo por objetivo, critério no nome do teste. Ajudantes em `e2e/ajuda.ts` (relógio fixo em 24/11/2026 10:00 SP) | `pnpm e2e` |
 | `docs/adr/` | Decisões registradas | — |
 | `docs/qa/` | Relatório de QA de cada objetivo | — |

@@ -10,3 +10,9 @@ coverage/
 tests/.tmp/
 tests/test-results/
 tests/playwright-report/
+
+# Python (apps/api)
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/

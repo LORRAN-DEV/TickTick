@@ -150,3 +150,31 @@ build de produção; comando `pnpm e2e`; workflow do GitHub Actions rodando test
 3. Os testes são determinísticos: relógio fixado em terça 24/11/2026 10:00 em São Paulo; nada depende da data real.
 4. A suíte passa 3 vezes seguidas sem falhas (sem testes instáveis).
 5. O GitHub Actions roda `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build` e `pnpm e2e` em cada push e pull request.
+
+## Objetivo 7 — API em Python: login e sincronização (concluído)
+
+**Por quê:** é a base para usar o app em mais de um aparelho e, depois, para os lembretes (o servidor dispara
+mesmo com o app fechado). Pelo plano, o app conversa com o servidor por três rotas de sync; o resto da API REST é
+para integrações e vem depois.
+
+**Dentro:** `apps/api` em FastAPI + PostgreSQL (ADR 0002); usuário único criado por comando; login/logout com
+cookie de sessão; `POST /api/sync/push` e `GET /api/sync/pull`; testes com pytest num Postgres real; job no CI.
+
+**Fora (próximos objetivos):** o app web usando o sync (fila de saída no Dexie), avisos em tempo real (SSE),
+lembretes e Web Push, API REST de integrações, `docker compose` + Caddy.
+
+### Critérios de aceite
+1. `uv run ticktick-api criar-usuario <email>` cria o usuário pedindo a senha (guardada com Argon2, nunca em texto).
+2. `POST /api/auth/login` com e-mail e senha certos devolve um cookie de sessão `HttpOnly`; errados, 401 sem dizer
+   qual dos dois errou. Depois de 5 tentativas erradas em 1 minuto, 429.
+3. Sem sessão válida, as rotas de sync respondem 401. `POST /api/auth/logout` invalida a sessão no servidor.
+4. `POST /api/sync/push` recebe um lote de mudanças `{tabela, id, campos, alterado_em}` das tabelas do app
+   (`tarefas`, `listas`, `itensChecklist`, `movs`, `metas`) e grava; tabela desconhecida ou lote inválido → 422.
+5. **Conflito por campo:** editar o título no aparelho A e a data no aparelho B não conflita (os dois valem);
+   no mesmo campo vence a edição mais recente (`alterado_em`). Uma mudança vinda "do futuro" conta como agora.
+6. Mandar o mesmo lote duas vezes não muda nada na segunda (idempotente) nem gera versão nova.
+7. `GET /api/sync/pull?since=N` devolve só os registros alterados depois da versão N, em ordem, em páginas
+   (`mais: true` quando há mais), e a versão para pedir a próxima página.
+8. Exclusão é lógica: `excluidoEm` é um campo como os outros e o registro continua vindo no pull.
+9. Um usuário nunca vê nem altera registros de outro.
+10. `uv run pytest` roda os testes contra PostgreSQL; o CI roda a API num job próprio com Postgres.

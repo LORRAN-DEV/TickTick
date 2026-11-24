@@ -12,6 +12,7 @@
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm --filter @ticktick/web lint",
-    "e2e": "pnpm --filter @ticktick/e2e e2e"
+    "e2e": "pnpm --filter @ticktick/e2e e2e",
+    "test:api": "cd apps/api && uv run pytest"
   }
 }

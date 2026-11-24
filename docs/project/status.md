@@ -1,6 +1,6 @@
 # Status do projeto
 
-_Atualizado em 24/11/2026, depois do objetivo 6._
+_Atualizado em 24/11/2026, depois do objetivo 7._
 
 ## Pronto
 - **Parser de quick-add** em português: datas, horas, recorrência, `#tag`, `~lista`, `!prioridade`
@@ -25,23 +25,30 @@ _Atualizado em 24/11/2026, depois do objetivo 6._
   "Atualizar". Verificado em `docs/qa/objetivo-5.md`.
 - **Objetivo 6: testes de ponta a ponta e CI**: 33 testes em `tests/e2e/` cobrindo os critérios dos objetivos 1 a 5
   (`pnpm e2e`), e o GitHub Actions rodando testes, tipos, lint, build e e2e a cada push. `docs/qa/objetivo-6.md`.
+- **Objetivo 7: API em Python** (`apps/api`, FastAPI + PostgreSQL): usuário criado por comando, login com
+  cookie de sessão e limite de tentativas, `POST /api/sync/push` e `GET /api/sync/pull` com conflito resolvido
+  por campo (vence a edição mais recente). 32 testes com pytest. `docs/qa/objetivo-7.md`.
 - **Time de agentes** configurado (`CLAUDE.md`, `.claude/agents/`, `.claude/skills/`).
 
 ## Falta
 - Pastas, notas em Markdown (hoje são texto puro) e arrastar para reordenar.
 - Lembretes e notificações.
 - Contas e categorias editáveis (a tela usa listas fixas), transferências na interface, importar/exportar CSV.
-- Back-end e sincronização entre aparelhos.
+- O app web ainda não usa a API: falta a tela de login e o sync (fila de saída no Dexie).
+- Implantação: `docker compose` com API, Postgres e Caddy (não verificável neste ambiente, sem Docker).
 
 ## Decisões tomadas
 - Back-end em **Python** (FastAPI + PostgreSQL): `docs/adr/0002-stack-do-back-end.md`.
 - Plano do app versionado em `docs/project/plano.md`.
 - App web como **SPA estático** (modo SPA do TanStack Start, sem servidor): `docs/adr/0003-app-web-como-spa.md`.
 - **PWA** com service worker do Workbox gerado depois do build: `docs/adr/0004-pwa-com-workbox-depois-do-build.md`.
+- **Servidor de sync** com documentos JSONB e relógio por campo: `docs/adr/0005-servidor-de-sync.md`.
 
 ## Decisões pendentes do humano
 1. Itens em aberto do plano: onde hospedar (VPS ou máquina em casa), iPhone ou Android, importar de outro app.
 
 ## Próximos objetivos sugeridos (em ordem)
-1. `apps/api` em Python: login, modelo de dados e sync (`/sync/pull`, `/sync/push`), como no plano.
-2. Sincronização no app web (fila de saída no Dexie) e lembretes (Web Push).
+1. Sincronização no app web: tela de login, fila de saída no Dexie com o horário de cada campo alterado,
+   push e pull automáticos quando há rede.
+2. `docker compose` (API + Postgres + Caddy servindo o app e repassando `/api`) e backup diário.
+3. Lembretes: worker no servidor e Web Push.
