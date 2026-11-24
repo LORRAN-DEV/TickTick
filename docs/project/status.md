@@ -48,12 +48,14 @@ _Atualizado em 24/11/2026, depois do objetivo 9._
 - **PWA** com service worker do Workbox gerado depois do build: `docs/adr/0004-pwa-com-workbox-depois-do-build.md`.
 - **Servidor de sync** com documentos JSONB e relógio por campo: `docs/adr/0005-servidor-de-sync.md`.
 - **Cliente de sync** com fila de saída por middleware do Dexie: `docs/adr/0006-cliente-de-sync.md`.
+- **Hospedagem:** PC em casa com Tailscale (domínio `.ts.net` e HTTPS grátis); celular Android:
+  `docs/adr/0007-hospedagem-pc-em-casa-com-tailscale.md`.
 
 ## Decisões pendentes do humano
-1. Itens em aberto do plano: onde hospedar (VPS ou máquina em casa), iPhone ou Android, importar de outro app.
+1. Item em aberto do plano: importar tarefas de outro app (TickTick, Todoist)?
 
 ## Próximos objetivos sugeridos (em ordem)
-1. **Você** escolher onde hospedar e subir (guia em `infra/README.md`); depois, usar por duas semanas, como o plano
-   pede antes da fase 2.
+1. **Você** subir no PC seguindo `infra/README.md` ("PC em casa + Tailscale"); depois, usar por duas semanas, como o
+   plano pede antes da fase 2.
 2. Lembretes: worker no servidor e Web Push.
 3. Aviso instantâneo entre aparelhos (SSE).
