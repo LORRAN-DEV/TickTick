@@ -8,7 +8,9 @@ import {
   Ban,
   Inbox,
   List as ListIcon,
+  ListChecks,
   ListTodo,
+  ListTree,
   Repeat,
   RotateCcw,
   Sun,
@@ -28,6 +30,8 @@ import {
   LISTAS_INTELIGENTES,
   NOMES_INTELIGENTES,
   parseQuickAdd,
+  progressoChecklist,
+  progressoSubtarefas,
   type Lista,
   type ListaInteligente,
   type Tarefa,
@@ -78,7 +82,7 @@ function salvar(p: Promise<unknown>, sucesso?: string) {
 }
 
 function PaginaTarefas() {
-  const { tarefas, listas } = useTarefas();
+  const { tarefas, listas, itens } = useTarefas();
   const [visao, setVisao] = useState<Visao>({ tipo: "inteligente", id: "hoje" });
   const [detalheId, setDetalheId] = useState<string | null>(null);
   const detalhe = detalheId ? (tarefas.find((t) => t.id === detalheId) ?? null) : null;
@@ -93,6 +97,7 @@ function PaginaTarefas() {
   );
   const contagem = (id: ListaInteligente) => filtrarInteligente(tarefas, id, hoje).length;
   const nomeLista = useMemo(() => new Map(listas.map((l) => [l.id, l.nome])), [listas]);
+  const tituloPorId = useMemo(() => new Map(tarefas.map((t) => [t.id, t.titulo])), [tarefas]);
   const titulo =
     visao.tipo === "inteligente"
       ? NOMES_INTELIGENTES[visao.id]
@@ -124,6 +129,11 @@ function PaginaTarefas() {
           hoje={hoje}
           nomeLista={visao.tipo === "inteligente" ? nomeLista : null}
           onAbrir={setDetalheId}
+          extras={(t) => ({
+            sub: progressoSubtarefas(tarefas, t.id),
+            chk: progressoChecklist(itens, t.id),
+            mae: t.paiId ? (tituloPorId.get(t.paiId) ?? null) : null,
+          })}
           vazio={
             visao.tipo === "inteligente" && visao.id === "lixeira"
               ? "A lixeira está vazia."
@@ -133,7 +143,14 @@ function PaginaTarefas() {
           }
         />
       </main>
-      <DetalheTarefa tarefa={detalhe} listas={listas} onFechar={() => setDetalheId(null)} />
+      <DetalheTarefa
+        tarefa={detalhe}
+        tarefas={tarefas}
+        listas={listas}
+        itens={itens}
+        onAbrir={setDetalheId}
+        onFechar={() => setDetalheId(null)}
+      />
     </div>
   );
 }
@@ -268,18 +285,27 @@ function QuickAdd({
   );
 }
 
+/** Informações da linha que dependem de outras tarefas e do checklist. */
+type Extras = {
+  sub: { feitas: number; total: number };
+  chk: { feitas: number; total: number };
+  mae: string | null;
+};
+
 function ListaDeTarefas({
   tarefas,
   hoje,
   nomeLista,
   vazio,
   onAbrir,
+  extras,
 }: {
   tarefas: Tarefa[];
   hoje: string;
   nomeLista: Map<string, string> | null;
   vazio: string;
   onAbrir: (id: string) => void;
+  extras: (t: Tarefa) => Extras;
 }) {
   if (!tarefas.length)
     return <p className="mt-10 text-center text-sm text-muted-foreground">{vazio}</p>;
@@ -292,6 +318,7 @@ function ListaDeTarefas({
           hoje={hoje}
           nomeLista={nomeLista?.get(t.listaId) ?? null}
           onAbrir={() => onAbrir(t.id)}
+          extras={extras(t)}
         />
       ))}
     </ul>
@@ -303,11 +330,13 @@ function LinhaTarefa({
   hoje,
   nomeLista,
   onAbrir,
+  extras,
 }: {
   t: Tarefa;
   hoje: string;
   nomeLista: string | null;
   onAbrir: () => void;
+  extras: Extras;
 }) {
   const naLixeira = !!t.excluidoEm;
   const aberta = t.status === "aberta" && !naLixeira;
@@ -379,6 +408,21 @@ function LinhaTarefa({
             <span key={tag}>#{tag}</span>
           ))}
           {nomeLista && <span>~{nomeLista}</span>}
+          {extras.sub.total > 0 && (
+            <span className="flex items-center gap-1" title="Subtarefas feitas">
+              <ListTree className="h-3.5 w-3.5" aria-hidden />
+              <span className="sr-only">Subtarefas: </span>
+              {extras.sub.feitas}/{extras.sub.total}
+            </span>
+          )}
+          {extras.chk.total > 0 && (
+            <span className="flex items-center gap-1" title="Itens do checklist feitos">
+              <ListChecks className="h-3.5 w-3.5" aria-hidden />
+              <span className="sr-only">Checklist: </span>
+              {extras.chk.feitas}/{extras.chk.total}
+            </span>
+          )}
+          {extras.mae && <span>↳ {extras.mae}</span>}
         </div>
       </div>
       <div className="flex shrink-0 gap-1">

@@ -1,6 +1,6 @@
 # Status do projeto
 
-_Atualizado em 24/11/2026, depois do objetivo 3._
+_Atualizado em 24/11/2026, depois do objetivo 4._
 
 ## Pronto
 - **Parser de quick-add** em português: datas, horas, recorrência, `#tag`, `~lista`, `!prioridade`
@@ -15,10 +15,15 @@ _Atualizado em 24/11/2026, depois do objetivo 3._
   criadas pelo `~lista`, listas inteligentes (Hoje, Amanhã, Próximos 7 dias, Tudo, Concluídas, Lixeira),
   concluir, reabrir, "não vou fazer", lixeira e restaurar. Tarefas recorrentes avançam para a próxima data ao
   concluir (`packages/core/src/recurrence/`). Menu entre Tarefas e Finanças. Verificado em `docs/qa/objetivo-2.md`.
+- **Objetivo 3: detalhe da tarefa**: clicar no título abre um painel para editar título, data, hora, prioridade,
+  tags, lista, repetição e notas; salva sozinho. Verificado em `docs/qa/objetivo-3.md`.
+- **Objetivo 4: subtarefas e checklist**: subtarefas pelo painel (até 5 níveis, com quick-add), progresso na
+  lista, concluir/lixeira/mudar de lista em cascata; checklist com marcar, renomear e remover. Verificado em
+  `docs/qa/objetivo-4.md`.
 - **Time de agentes** configurado (`CLAUDE.md`, `.claude/agents/`, `.claude/skills/`).
 
 ## Falta
-- Subtarefas, checklist, pastas e notas em Markdown (hoje são texto puro).
+- Pastas, notas em Markdown (hoje são texto puro) e arrastar para reordenar.
 - Lembretes e notificações.
 - Contas e categorias editáveis (a tela usa listas fixas), transferências na interface, importar/exportar CSV.
 - PWA (funcionar offline e instalar no celular).
@@ -34,7 +39,6 @@ _Atualizado em 24/11/2026, depois do objetivo 3._
 1. Itens em aberto do plano: onde hospedar (VPS ou máquina em casa), iPhone ou Android, importar de outro app.
 
 ## Próximos objetivos sugeridos (em ordem)
-1. Subtarefas e checklist.
-2. PWA offline (service worker guardando o build estático) e instalar no celular.
-3. Suíte e2e versionada em `tests/` (Playwright) com os roteiros dos objetivos 1, 2 e 3.
-4. `apps/api` em Python, sincronização e lembretes (Web Push).
+1. PWA offline (service worker guardando o build estático) e instalar no celular.
+2. Suíte e2e versionada em `tests/` (Playwright) com os roteiros dos objetivos 1 a 4.
+3. `apps/api` em Python, sincronização e lembretes (Web Push).

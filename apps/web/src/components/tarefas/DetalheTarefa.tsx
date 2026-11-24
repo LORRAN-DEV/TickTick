@@ -3,7 +3,7 @@
  * seletores, data e hora ao mudar. As regras de coerência ficam em `editarTarefa` (core).
  */
 import { useEffect, useId, useState, type ReactNode } from "react";
-import { Ban, CheckCircle2, Trash2 } from "lucide-react";
+import { Ban, CheckCircle2, CornerLeftUp, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,7 @@ import {
   REPETICOES_PRONTAS,
   repeticaoDaRegra,
   TituloVazioError,
+  type ItemChecklist,
   type Lista,
   type MudancasTarefa,
   type Priority,
@@ -34,29 +35,62 @@ import {
 } from "@ticktick/core";
 import { atualizarTarefa, concluirTarefa, moverParaLixeira } from "@/db/tarefas";
 import { NOMES_PRIORIDADE } from "@/lib/rotulos";
+import { Checklist } from "./Checklist";
+import { Subtarefas } from "./Subtarefas";
 
 const seletor =
   "h-10 w-full rounded-md border border-input bg-card px-3 text-sm disabled:opacity-50";
 
 export function DetalheTarefa({
   tarefa,
+  tarefas,
   listas,
+  itens,
+  onAbrir,
   onFechar,
 }: {
   tarefa: Tarefa | null;
+  tarefas: Tarefa[];
   listas: Lista[];
+  itens: ItemChecklist[];
+  onAbrir: (id: string) => void;
   onFechar: () => void;
 }) {
   return (
     <Sheet open={!!tarefa} onOpenChange={(aberto) => !aberto && onFechar()}>
       <SheetContent className="flex w-full flex-col gap-0 overflow-y-auto sm:max-w-md">
-        {tarefa && <Campos t={tarefa} listas={listas} onFechar={onFechar} />}
+        {tarefa && (
+          <Campos
+            key={tarefa.id}
+            t={tarefa}
+            tarefas={tarefas}
+            listas={listas}
+            itens={itens}
+            onAbrir={onAbrir}
+            onFechar={onFechar}
+          />
+        )}
       </SheetContent>
     </Sheet>
   );
 }
 
-function Campos({ t, listas, onFechar }: { t: Tarefa; listas: Lista[]; onFechar: () => void }) {
+function Campos({
+  t,
+  tarefas,
+  listas,
+  itens,
+  onAbrir,
+  onFechar,
+}: {
+  t: Tarefa;
+  tarefas: Tarefa[];
+  listas: Lista[];
+  itens: ItemChecklist[];
+  onAbrir: (id: string) => void;
+  onFechar: () => void;
+}) {
+  const mae = t.paiId ? tarefas.find((x) => x.id === t.paiId) : undefined;
   const aberta = t.status === "aberta" && !t.excluidoEm;
   const repeticao = repeticaoDaRegra(t.rrule, t.data);
 
@@ -79,6 +113,15 @@ function Campos({ t, listas, onFechar }: { t: Tarefa; listas: Lista[]; onFechar:
   return (
     <>
       <SheetHeader className="pr-8">
+        {mae && (
+          <button
+            onClick={() => onAbrir(mae.id)}
+            className="flex items-center gap-1 self-start text-xs text-muted-foreground hover:text-foreground hover:underline"
+          >
+            <CornerLeftUp className="h-3.5 w-3.5" aria-hidden />
+            Voltar para “{mae.titulo}”
+          </button>
+        )}
         <SheetTitle className="sr-only">Detalhe da tarefa</SheetTitle>
         <SheetDescription className="sr-only">
           As mudanças são salvas automaticamente.
@@ -196,6 +239,9 @@ function Campos({ t, listas, onFechar }: { t: Tarefa; listas: Lista[]; onFechar:
           />
         </div>
       </div>
+
+      <Subtarefas mae={t} tarefas={tarefas} onAbrir={onAbrir} />
+      <Checklist tarefaId={t.id} itens={itens} />
 
       <SheetFooter className="mt-6 flex-row flex-wrap gap-2 sm:justify-between">
         <div className="flex gap-2">

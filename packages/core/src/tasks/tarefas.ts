@@ -24,6 +24,8 @@ export interface Tarefa {
   rrule: string | null;
   tags: string[];
   listaId: string;
+  /** Tarefa-mãe, se esta for uma subtarefa. */
+  paiId?: string | undefined;
   concluidaEm?: string | undefined;
   /** Na cópia concluída de uma recorrente: id da tarefa que continua repetindo. */
   origemId?: string | undefined;
@@ -65,7 +67,11 @@ export function dadosDoQuickAdd(p: ParsedTask): Pick<Tarefa, "titulo" | "data" |
 export const atrasada = (t: Tarefa, hoje: PlainDate): boolean =>
   t.status === "aberta" && t.data !== null && t.data < hoje;
 
-/** Tarefas visíveis numa lista inteligente. Hoje e Próximos 7 dias incluem as atrasadas. */
+/**
+ * Tarefas visíveis numa lista inteligente. Hoje e Próximos 7 dias incluem as atrasadas.
+ * Subtarefas aparecem nas listas por data (se tiverem data); em Tudo ficam dentro da mãe.
+ * Na Lixeira não aparecem as que foram junto com a mãe (aparece só a mãe).
+ */
 export function filtrarInteligente(tarefas: Tarefa[], lista: ListaInteligente, hoje: PlainDate): Tarefa[] {
   const vivas = tarefas.filter((t) => !t.excluidoEm);
   const abertas = vivas.filter((t) => t.status === "aberta");
@@ -81,19 +87,25 @@ export function filtrarInteligente(tarefas: Tarefa[], lista: ListaInteligente, h
       return ordenar(abertas.filter((t) => t.data !== null && t.data <= fim));
     }
     case "tudo":
-      return ordenar(abertas);
+      return ordenar(abertas.filter((t) => !t.paiId));
     case "concluidas":
       return vivas
         .filter((t) => t.status !== "aberta")
         .sort((a, b) => (b.concluidaEm ?? b.atualizadoEm).localeCompare(a.concluidaEm ?? a.atualizadoEm));
-    case "lixeira":
-      return tarefas.filter((t) => t.excluidoEm).sort((a, b) => b.excluidoEm!.localeCompare(a.excluidoEm!));
+    case "lixeira": {
+      const porId = new Map(tarefas.map((t) => [t.id, t]));
+      return tarefas
+        .filter((t) => t.excluidoEm && !(t.paiId && porId.get(t.paiId)?.excluidoEm))
+        .sort((a, b) => b.excluidoEm!.localeCompare(a.excluidoEm!));
+    }
   }
 }
 
-/** Abertas de uma lista comum (Inbox ou criada pelo usuário). */
+/** Abertas de uma lista comum (Inbox ou criada pelo usuário). Subtarefas ficam dentro da mãe. */
 export function filtrarLista(tarefas: Tarefa[], listaId: string): Tarefa[] {
-  return ordenar(tarefas.filter((t) => !t.excluidoEm && t.status === "aberta" && t.listaId === listaId));
+  return ordenar(
+    tarefas.filter((t) => !t.excluidoEm && t.status === "aberta" && t.listaId === listaId && !t.paiId),
+  );
 }
 
 /** Mais cedo primeiro (atrasadas no topo), sem data no fim; empate: maior prioridade, depois mais antiga. */

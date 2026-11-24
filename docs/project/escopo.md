@@ -81,3 +81,35 @@ anexos, lembretes, repetição personalizada além das opções prontas.
 7. **Quando** mudo a data de uma tarefa "toda semana" ou "todo mês", **então** a regra acompanha o novo dia.
 8. **Quando** concluo ou mando para a lixeira pelo painel, **então** o painel fecha e a tarefa sai da lista.
 9. Cada mudança atualiza `atualizadoEm` (para o sync futuro).
+
+## Objetivo 4 — Subtarefas e checklist (concluído)
+
+**Por quê:** o plano põe subtarefas (até 5 níveis) e checklist dentro da tarefa no MVP. Subtarefa é uma tarefa de
+verdade (tem data, prioridade, pode ter suas próprias subtarefas); item de checklist é só um texto marcável.
+
+**Dentro:** criar, concluir e abrir subtarefas pelo painel da tarefa-mãe; navegar de volta para a mãe; adicionar,
+marcar, renomear e remover itens de checklist; contadores na lista.
+
+**Fora:** arrastar para reordenar, transformar item de checklist em subtarefa, mover subtarefa para outra mãe.
+
+### Critérios de aceite — subtarefas
+1. **No** painel de uma tarefa, **quando** digito no campo "Adicionar subtarefa" (aceita o quick-add, ex.:
+   `comprar tinta amanhã !alta`) e aperto Enter, **então** a subtarefa aparece no painel, na mesma lista da mãe.
+2. **Quando** clico numa subtarefa, **então** o painel passa a mostrá-la, com um link para voltar à mãe.
+3. Subtarefas podem ter subtarefas até o **5º nível**; no 5º, o campo de adicionar some e há um aviso.
+4. **Na lista**, a tarefa-mãe mostra o progresso (ex.: `1/3`); as subtarefas **não** aparecem soltas em Tudo nem
+   nas listas comuns. **Em** Hoje, Amanhã e Próximos 7 dias, uma subtarefa **com data** aparece, indicando a mãe.
+5. **Quando** concluo a mãe, **então** as subtarefas abertas são concluídas junto. Reabrir a mãe não reabre as filhas.
+6. **Quando** mando a mãe para a lixeira, **então** as subtarefas vão junto; **quando** restauro a mãe, **então**
+   voltam as que foram junto com ela. Na Lixeira aparece só a mãe.
+7. **Quando** mudo a mãe de lista, **então** as subtarefas mudam junto.
+8. **Dada** uma mãe recorrente, **quando** concluo, **então** ela avança e as subtarefas e itens do checklist voltam
+   a ficar abertos para a próxima ocorrência.
+
+### Critérios de aceite — checklist
+9. **No** painel, **quando** digito em "Adicionar item" e aperto Enter, **então** o item aparece no fim do checklist
+   e o campo continua pronto para o próximo.
+10. **Quando** marco um item, **então** ele aparece riscado e o contador (ex.: `1/3`) atualiza no painel e na lista.
+11. **Quando** edito o texto de um item e saio do campo, **então** salva; texto vazio volta ao anterior.
+12. **Quando** removo um item, **então** ele some (exclusão lógica).
+13. Tudo persiste ao recarregar e funciona offline.

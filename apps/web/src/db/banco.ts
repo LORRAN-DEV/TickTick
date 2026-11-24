@@ -9,7 +9,7 @@
  * senão quem já tem dados no navegador quebra.
  */
 import Dexie, { type EntityTable } from "dexie";
-import type { Lista, Meta, Mov, Tarefa } from "@ticktick/core";
+import type { ItemChecklist, Lista, Meta, Mov, Tarefa } from "@ticktick/core";
 
 export type Config = { chave: string; valor: unknown };
 
@@ -19,6 +19,7 @@ export class TickTickDB extends Dexie {
   config!: EntityTable<Config, "chave">;
   tarefas!: EntityTable<Tarefa, "id">;
   listas!: EntityTable<Lista, "id">;
+  itensChecklist!: EntityTable<ItemChecklist, "id">;
 
   constructor(nome = "ticktick") {
     super(nome);
@@ -30,6 +31,10 @@ export class TickTickDB extends Dexie {
     this.version(2).stores({
       tarefas: "id, listaId, status, data, atualizadoEm",
       listas: "id, nome, atualizadoEm",
+    });
+    this.version(3).stores({
+      tarefas: "id, listaId, status, data, atualizadoEm, paiId",
+      itensChecklist: "id, tarefaId, atualizadoEm",
     });
   }
 }

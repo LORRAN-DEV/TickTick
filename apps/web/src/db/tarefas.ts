@@ -1,6 +1,11 @@
 /** Operações de tarefas e listas no banco local (ver `banco.ts`). */
 import {
-  concluir,
+  concluirComDescendentes,
+  lixeiraComDescendentes,
+  moverDescendentesDeLista,
+  NIVEL_MAXIMO,
+  podeTerSubtarefa,
+  restaurarComDescendentes,
   dadosDoQuickAdd,
   editarTarefa,
   hojeLocal,
@@ -90,19 +95,27 @@ export async function criarDoTexto(
   });
 }
 
-/** Concluir ou "não vou fazer". Recorrente: avança para a próxima data e guarda uma cópia no histórico. */
+/** Concluir ou "não vou fazer", com as subtarefas (regras em `concluirComDescendentes` do core). */
 export async function concluirTarefa(
   id: string,
   como: Exclude<StatusTarefa, "aberta"> = "concluida",
   banco: TickTickDB = db,
   agora: Date = new Date(),
 ): Promise<void> {
-  await banco.transaction("rw", banco.tarefas, async () => {
-    const t = await banco.tarefas.get(id);
-    if (!t || t.status !== "aberta") return;
-    const r = concluir(t, agora.toISOString(), hojeLocal(agora), como);
-    await banco.tarefas.put(r.tarefa);
-    if (r.copiaConcluida) await banco.tarefas.add({ ...r.copiaConcluida, id: uuidv7() });
+  await banco.transaction("rw", banco.tarefas, banco.itensChecklist, async () => {
+    const todas = await banco.tarefas.toArray();
+    const iso = agora.toISOString();
+    const r = concluirComDescendentes(todas, id, iso, hojeLocal(agora), como);
+    if (!r.alteradas.length) return;
+    await banco.tarefas.bulkPut(r.alteradas);
+    if (r.novas.length) await banco.tarefas.bulkAdd(r.novas.map((n) => ({ ...n, id: uuidv7() })));
+    if (r.reiniciarChecklistDe.length) {
+      await banco.itensChecklist
+        .where("tarefaId")
+        .anyOf(r.reiniciarChecklistDe)
+        .filter((i) => i.feito && !i.excluidoEm)
+        .modify({ feito: false, atualizadoEm: iso });
+    }
   });
 }
 
@@ -114,18 +127,27 @@ export async function reabrirTarefa(id: string, banco: TickTickDB = db): Promise
   });
 }
 
+/** Lixeira, levando as subtarefas junto. */
 export async function moverParaLixeira(id: string, banco: TickTickDB = db): Promise<void> {
-  const agora = agoraISO();
-  await banco.tarefas.update(id, { excluidoEm: agora, atualizadoEm: agora });
+  await banco.transaction("rw", banco.tarefas, async () => {
+    await banco.tarefas.bulkPut(
+      lixeiraComDescendentes(await banco.tarefas.toArray(), id, agoraISO()),
+    );
+  });
 }
 
+/** Restaura a tarefa e as subtarefas que foram para a lixeira junto com ela. */
 export async function restaurarTarefa(id: string, banco: TickTickDB = db): Promise<void> {
-  await banco.tarefas.update(id, { excluidoEm: undefined, atualizadoEm: agoraISO() });
+  await banco.transaction("rw", banco.tarefas, async () => {
+    await banco.tarefas.bulkPut(
+      restaurarComDescendentes(await banco.tarefas.toArray(), id, agoraISO()),
+    );
+  });
 }
 
 /**
  * Edita uma tarefa (regras em `editarTarefa` do core). Lança TituloVazioError/HoraInvalidaError
- * sem gravar nada. Devolve a tarefa como ficou.
+ * sem gravar nada. Mudou de lista? As subtarefas vão junto. Devolve a tarefa como ficou.
  */
 export async function atualizarTarefa(
   id: string,
@@ -136,8 +158,49 @@ export async function atualizarTarefa(
   return banco.transaction("rw", banco.tarefas, async () => {
     const t = await banco.tarefas.get(id);
     if (!t) throw new Error(`Tarefa não encontrada: ${id}`);
-    const nova = editarTarefa(t, mudancas, agora.toISOString(), hojeLocal(agora));
+    const iso = agora.toISOString();
+    const nova = editarTarefa(t, mudancas, iso, hojeLocal(agora));
     await banco.tarefas.put(nova);
+    if (nova.listaId !== t.listaId) {
+      const todas = await banco.tarefas.toArray();
+      await banco.tarefas.bulkPut(moverDescendentesDeLista(todas, id, nova.listaId, iso));
+    }
     return nova;
+  });
+}
+
+export class NivelMaximoError extends Error {
+  constructor() {
+    super(`Subtarefas vão até o ${NIVEL_MAXIMO}º nível`);
+    this.name = "NivelMaximoError";
+  }
+}
+
+/** Cria uma subtarefa pelo texto do quick-add. Fica na lista da mãe (um `~lista` no texto é ignorado). */
+export async function criarSubtarefa(
+  paiId: string,
+  texto: string,
+  opcoes: { agora?: Date; banco?: TickTickDB } = {},
+): Promise<Tarefa> {
+  const banco = opcoes.banco ?? db;
+  const p = parseQuickAdd(texto, { now: opcoes.agora ?? new Date() });
+  if (!p.title.trim()) throw new TituloVazioError();
+  return banco.transaction("rw", banco.tarefas, async () => {
+    const todas = await banco.tarefas.toArray();
+    const pai = todas.find((x) => x.id === paiId);
+    if (!pai) throw new Error(`Tarefa não encontrada: ${paiId}`);
+    if (!podeTerSubtarefa(todas, pai)) throw new NivelMaximoError();
+    const agora = agoraISO();
+    const sub: Tarefa = {
+      ...dadosDoQuickAdd(p),
+      id: uuidv7(),
+      status: "aberta",
+      listaId: pai.listaId,
+      paiId,
+      criadoEm: agora,
+      atualizadoEm: agora,
+    };
+    await banco.tarefas.add(sub);
+    return sub;
   });
 }
